@@ -497,29 +497,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Built With Section */}
-      <section className="py-16 px-4 relative z-10 border-t border-border/50">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <p className="text-sm text-muted-foreground mb-8 font-light tracking-wide">
-              POWERED BY
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-12 opacity-40 grayscale">
-              <div className="text-2xl font-light tracking-tight">OpenAI</div>
-              <div className="text-2xl font-light tracking-tight">AWS</div>
-              <div className="text-2xl font-light tracking-tight">Vercel</div>
-              <div className="text-2xl font-light tracking-tight">Supabase</div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-border relative z-10 bg-slate-50/50">
         <div className="container mx-auto max-w-6xl">
