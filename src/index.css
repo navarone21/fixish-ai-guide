@@ -99,10 +99,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-['Inter',sans-serif] antialiased;
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
 
   html {
     scroll-behavior: smooth;
+    transition: background-color 0.5s ease;
   }
 }
 
