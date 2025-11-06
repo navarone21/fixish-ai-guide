@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle, Headphones } from "lucide-react";
+import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle, Headphones, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,8 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { ParsedMessage } from "@/components/ParsedMessage";
 import { EnhancedContentRenderer } from "@/components/EnhancedContentRenderer";
+import { RepairGuideViewer } from "@/components/RepairGuideViewer";
+import { RepairHistoryDrawer } from "@/components/RepairHistoryDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -603,6 +605,7 @@ const ChatContent = () => {
               
               {/* Right: Actions */}
               <div className="flex items-center gap-2 min-w-[120px] justify-end">
+                <RepairHistoryDrawer userId={getUserId()} />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -761,11 +764,17 @@ const ChatContent = () => {
                       {message.content && (
                         <div className="text-sm md:text-base leading-relaxed">
                           {message.role === "assistant" ? (
-                            <EnhancedContentRenderer
-                              content={message.content}
-                              isDarkMode={isDarkMode}
-                              onTermClick={handleTermClick}
-                            />
+                            <>
+                              <EnhancedContentRenderer
+                                content={message.content}
+                                isDarkMode={isDarkMode}
+                                onTermClick={handleTermClick}
+                              />
+                              <RepairGuideViewer 
+                                content={message.content}
+                                userId={getUserId()}
+                              />
+                            </>
                           ) : (
                             <p className="whitespace-pre-wrap">{message.content}</p>
                           )}

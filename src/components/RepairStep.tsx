@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 interface RepairStepProps {
   number: number;
@@ -10,9 +11,11 @@ interface RepairStepProps {
   image?: string;
   tip?: string;
   defaultOpen?: boolean;
+  onNarrate?: () => void;
+  isNarrating?: boolean;
 }
 
-export const RepairStep = ({ number, title, content, image, tip, defaultOpen = false }: RepairStepProps) => {
+export const RepairStep = ({ number, title, content, image, tip, defaultOpen = false, onNarrate, isNarrating = false }: RepairStepProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -46,6 +49,24 @@ export const RepairStep = ({ number, title, content, image, tip, defaultOpen = f
           </div>
           
           <span className="font-semibold flex-1">{title}</span>
+          
+          {onNarrate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNarrate();
+              }}
+              className="shrink-0 h-8 w-8"
+            >
+              {isNarrating ? (
+                <VolumeX className="h-4 w-4 text-primary" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
           
           {isOpen ? (
             <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />

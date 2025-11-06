@@ -34,7 +34,14 @@ export const useRepairHistory = (userId: string) => {
       if (error) throw error;
       
       setProjects(data?.map(p => ({
-        ...p,
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        status: p.status as "in_progress" | "completed" | "paused",
+        confidence_score: p.confidence_score || undefined,
+        tools_used: p.tools_used || undefined,
+        images: p.images || undefined,
+        notes: p.notes || undefined,
         created_at: new Date(p.created_at),
         completed_at: p.completed_at ? new Date(p.completed_at) : undefined,
       })) || []);
@@ -50,9 +57,15 @@ export const useRepairHistory = (userId: string) => {
     try {
       await supabase.rpc('set_user_context', { p_user_id: userId });
       
+      const projectData = {
+        ...project,
+        user_id: userId,
+        completed_at: project.completed_at ? project.completed_at.toISOString() : undefined,
+      };
+      
       const { data, error } = await supabase
         .from('repair_projects')
-        .insert([{ ...project, user_id: userId }])
+        .insert([projectData])
         .select()
         .single();
 
@@ -79,9 +92,14 @@ export const useRepairHistory = (userId: string) => {
     try {
       await supabase.rpc('set_user_context', { p_user_id: userId });
       
+      const updateData: any = { ...updates };
+      if (updateData.completed_at && updateData.completed_at instanceof Date) {
+        updateData.completed_at = updateData.completed_at.toISOString();
+      }
+      
       const { error } = await supabase
         .from('repair_projects')
-        .update(updates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
