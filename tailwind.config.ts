@@ -91,6 +91,17 @@ export default {
           "0%": { transform: "translateY(0) translateX(0)", opacity: "0.5" },
           "100%": { transform: "translateY(-100vh) translateX(20px)", opacity: "0" },
         },
+        "hummingbird-flight": {
+          "0%": { transform: "translate(0, 0)" },
+          "25%": { transform: "translate(8px, -6px)" },
+          "50%": { transform: "translate(0, -10px)" },
+          "75%": { transform: "translate(-8px, -6px)" },
+          "100%": { transform: "translate(0, 0)" },
+        },
+        "wing-flap": {
+          "0%, 100%": { transform: "scaleY(1)" },
+          "50%": { transform: "scaleY(0.95)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -99,6 +110,8 @@ export default {
         "slide-up": "slide-up 0.8s ease-out",
         "float": "float 3s ease-in-out infinite",
         "particle": "particle 15s linear infinite",
+        "hummingbird-flight": "hummingbird-flight 8s ease-in-out infinite",
+        "wing-flap": "wing-flap 0.3s ease-in-out infinite",
       },
     },
   },
