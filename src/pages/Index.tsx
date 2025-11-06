@@ -435,10 +435,92 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border relative z-10">
+      {/* Testimonials Section */}
+      <section className="py-32 px-4 relative z-10">
+        <div className="container mx-auto max-w-7xl">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-light text-center mb-20 tracking-tight"
+          >
+            Trusted by Builders and Fixers.
+          </motion.h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "Fix-ISH saved me hours rebuilding my kitchen fan — it's like having an engineer in your pocket.",
+                author: "Jordan T.",
+                role: "DIY Enthusiast"
+              },
+              {
+                quote: "The future of hands-on learning. I fixed my car's AC with real-time help from Fix-ISH.",
+                author: "Taylor L.",
+                role: "Mechanic"
+              },
+              {
+                quote: "It adapts to how I work — not the other way around. Brilliant execution.",
+                author: "Sam R.",
+                role: "Contractor"
+              }
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.15 }}
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: "0 10px 30px rgba(0, 198, 195, 0.1)",
+                  transition: { duration: 0.3 }
+                }}
+                className="bg-card p-8 rounded-xl border border-border transition-all duration-300"
+              >
+                <div className="text-4xl text-primary mb-4 opacity-50">"</div>
+                <p className="text-muted-foreground leading-relaxed mb-6 italic">
+                  {testimonial.quote}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="font-medium">— {testimonial.author}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Built With Section */}
+      <section className="py-16 px-4 relative z-10 border-t border-border/50">
         <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <p className="text-sm text-muted-foreground mb-8 font-light tracking-wide">
+              POWERED BY
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-12 opacity-40 grayscale">
+              <div className="text-2xl font-light tracking-tight">OpenAI</div>
+              <div className="text-2xl font-light tracking-tight">AWS</div>
+              <div className="text-2xl font-light tracking-tight">Vercel</div>
+              <div className="text-2xl font-light tracking-tight">Supabase</div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 border-t border-border relative z-10 bg-slate-50/50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-3">
               <img src={logo} alt="Fix-ISH Logo" className="w-8 h-8" />
               <div>
@@ -446,10 +528,24 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Adaptive Intelligence for the Real World.</p>
               </div>
             </div>
+            
+            <div className="flex flex-wrap gap-6 text-sm">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a>
+              <a href="mailto:support@fixish.ai" className="text-muted-foreground hover:text-primary transition-colors">Contact</a>
+            </div>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            Copyright © 2025 Lavern Williams. All rights reserved.
+          <div className="text-center space-y-1">
+            <p className="text-sm text-muted-foreground">
+              © 2025 Lavern Williams AI Technologies. All rights reserved.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Fix-ISH™ is a trademark of Lavern Williams AI.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <a href="mailto:support@fixish.ai" className="hover:text-primary transition-colors">support@fixish.ai</a>
+            </p>
           </div>
         </div>
       </footer>
