@@ -1,36 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import repairBg from '@/assets/repair-background.jpg';
-import screwImg from '@/assets/screw-realistic.png';
 
 export const SchematicBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [screwImage, setScrewImage] = useState<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    const img = new Image();
-    img.src = screwImg;
-    img.onload = () => setScrewImage(img);
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !screwImage) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    // Bouncing screw - much bigger
-    const screw = {
-      x: canvas.width / 2,
-      y: canvas.height / 2,
-      vx: 3,
-      vy: 2.5,
-      size: 150, // Much bigger
-      rotation: 0,
-    };
 
     // AI particles
     const particles: Array<{
@@ -65,50 +47,10 @@ export const SchematicBackground = () => {
 
     let animationFrame = 0;
 
-    const drawScrew = (x: number, y: number, size: number, rotation: number) => {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-
-      // Glow effect
-      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.8);
-      gradient.addColorStop(0, 'rgba(0, 198, 195, 0.3)');
-      gradient.addColorStop(1, 'rgba(0, 198, 195, 0)');
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 0.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw realistic screw image
-      ctx.shadowColor = 'rgba(0, 198, 195, 0.5)';
-      ctx.shadowBlur = 20;
-      ctx.drawImage(screwImage, -size / 2, -size / 2, size, size);
-      ctx.shadowBlur = 0;
-
-      ctx.restore();
-    };
-
     const animate = () => {
       ctx.fillStyle = 'rgba(248, 249, 250, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       animationFrame++;
-
-      // Update screw position
-      screw.x += screw.vx;
-      screw.y += screw.vy;
-
-      // Bounce off edges
-      if (screw.x <= screw.size / 2 || screw.x >= canvas.width - screw.size / 2) {
-        screw.vx *= -1;
-        screw.rotation += Math.PI / 3;
-      }
-      if (screw.y <= screw.size / 2 || screw.y >= canvas.height - screw.size / 2) {
-        screw.vy *= -1;
-        screw.rotation += Math.PI / 3;
-      }
-
-      // Rotate screw as it moves
-      screw.rotation += 0.03;
 
       // Draw AI particles
       particles.forEach((particle) => {
@@ -225,9 +167,6 @@ export const SchematicBackground = () => {
         });
       });
 
-      // Draw the screw last (on top)
-      drawScrew(screw.x, screw.y, screw.size, screw.rotation);
-
       requestAnimationFrame(animate);
     };
 
@@ -243,7 +182,7 @@ export const SchematicBackground = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [screwImage]);
+  }, []);
 
   return (
     <>
@@ -259,7 +198,7 @@ export const SchematicBackground = () => {
         }}
       />
       
-      {/* Bouncing screw and AI elements animation */}
+      {/* AI elements animation */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none"
