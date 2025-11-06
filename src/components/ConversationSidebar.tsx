@@ -30,7 +30,7 @@ export const ConversationSidebar = ({
   isDarkMode,
 }: ConversationSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const filteredConversations = conversations.filter(
     (conv) =>
@@ -49,15 +49,23 @@ export const ConversationSidebar = ({
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden hover:bg-primary/10"
-      >
-        <Menu className="w-5 h-5" style={{ color: "#00C2B2" }} />
-      </Button>
+      {/* Toggle Button - Always Visible */}
+      {!isOpen && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsOpen(true)}
+          className="fixed top-20 left-4 z-50 hover:bg-primary/10 transition-all duration-300 shadow-lg"
+          style={{
+            background: isDarkMode ? "rgba(35, 37, 39, 0.95)" : "rgba(255, 255, 255, 0.95)",
+            borderColor: borderColor,
+            border: "1px solid",
+          }}
+          title="Open chat history"
+        >
+          <Menu className="w-5 h-5" style={{ color: "#00C2B2" }} />
+        </Button>
+      )}
 
       {/* Sidebar */}
       <AnimatePresence>
@@ -78,18 +86,19 @@ export const ConversationSidebar = ({
               animate={{ x: 0 }}
               exit={{ x: -300 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="fixed top-0 left-0 h-full w-80 z-50 backdrop-blur-xl border-r flex flex-col"
+              className="fixed top-0 left-0 h-full w-80 z-50 backdrop-blur-xl border-r flex flex-col shadow-2xl"
               style={{
                 background: sidebarBg,
                 borderColor: borderColor,
               }}
             >
-              {/* Close Button (Mobile) */}
+              {/* Close Button - Always Visible */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 lg:hidden hover:bg-primary/10"
+                className="absolute top-4 right-4 hover:bg-primary/10 transition-all duration-300"
+                title="Close chat history"
               >
                 <X className="w-5 h-5" style={{ color: "#00C2B2" }} />
               </Button>
