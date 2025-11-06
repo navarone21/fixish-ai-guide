@@ -6,12 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { RepairWorkshopBackground } from "@/components/RepairWorkshopBackground";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FeedbackFormData>({
     feedbackType: "",
     name: "",
@@ -178,7 +180,8 @@ const Index = () => {
               className="relative"
             >
               <Button 
-                size="lg" 
+                size="lg"
+                onClick={() => navigate("/chat")}
                 className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)] relative overflow-hidden"
               >
                 {/* Spark effect on hover */}
