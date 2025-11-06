@@ -813,8 +813,8 @@ const Index = () => {
             </div>
             
             <div className="flex flex-wrap gap-6 text-sm">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a>
+              <a href="/privacy" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
+              <a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a>
               <a href="mailto:support@fixish.ai" className="text-muted-foreground hover:text-primary transition-colors">Contact</a>
             </div>
           </div>
