@@ -12,6 +12,7 @@ import { FeedbackRating } from "@/components/FeedbackRating";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { ParsedMessage } from "@/components/ParsedMessage";
+import { EnhancedContentRenderer } from "@/components/EnhancedContentRenderer";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -687,15 +688,15 @@ const ChatContent = () => {
                       )}
                       
                       {message.content && (
-                        <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                        <div className="text-sm md:text-base leading-relaxed">
                           {message.role === "assistant" ? (
-                            <ParsedMessage
+                            <EnhancedContentRenderer
                               content={message.content}
                               isDarkMode={isDarkMode}
                               onTermClick={handleTermClick}
                             />
                           ) : (
-                            message.content
+                            <p className="whitespace-pre-wrap">{message.content}</p>
                           )}
                           {message.isStreaming && (
                             <motion.span 
@@ -705,7 +706,7 @@ const ChatContent = () => {
                               transition={{ duration: 0.8, repeat: Infinity }}
                             />
                           )}
-                        </p>
+                        </div>
                       )}
 
                         <p className="text-xs mt-2" style={{ color: "#999999" }}>
