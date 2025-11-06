@@ -488,11 +488,23 @@ const ChatContent = () => {
         body: JSON.stringify(payload),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
         throw new Error(`Failed to communicate with backend: ${response.status}`);
       }
 
-      const functionData = await response.json();
+      const responseText = await response.text();
+      console.log("Response text:", responseText);
+
+      if (!responseText) {
+        throw new Error("n8n workflow returned empty response. Make sure you have a 'Respond to Webhook' node that returns { reply: 'AI response' }");
+      }
+
+      const functionData = JSON.parse(responseText);
 
       // Check if response is streaming
       if (functionData && typeof functionData === 'object' && 'response' in functionData) {
