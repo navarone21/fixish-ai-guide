@@ -481,14 +481,18 @@ const ChatContent = () => {
       // Clear selected mode after sending
       setSelectedMode(null);
 
-      // Call edge function instead of direct n8n webhook
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('n8n_bridge', {
-        body: payload
+      // Call n8n webhook directly
+      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      if (functionError) {
-        throw new Error(functionError.message || "Failed to communicate with backend");
+      if (!response.ok) {
+        throw new Error(`Failed to communicate with backend: ${response.status}`);
       }
+
+      const functionData = await response.json();
 
       // Check if response is streaming
       if (functionData && typeof functionData === 'object' && 'response' in functionData) {
