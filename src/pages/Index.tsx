@@ -6,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { TechBackground } from "@/components/TechBackground";
-import { AnimatedHummingbird } from "@/components/AnimatedHummingbird";
+import { SchematicBackground } from "@/components/SchematicBackground";
+import { RealisticHummingbird } from "@/components/RealisticHummingbird";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
@@ -87,33 +87,46 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen relative">
-      <TechBackground />
+    <div className="min-h-screen relative bg-gradient-to-br from-background via-background to-muted/20">
+      <SchematicBackground />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <AnimatedHummingbird />
+        <RealisticHummingbird />
         
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          <motion.h1
-            className="text-7xl md:text-9xl font-light tracking-tight uppercase mb-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            FIX-ISH
-          </motion.h1>
+          {/* Letter-by-letter animation for FIX-ISH */}
+          <div className="mb-3">
+            {['F', 'I', 'X', '-', 'I', 'S', 'H'].map((letter, index) => (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ 
+                  duration: 0.6,
+                  delay: 0.3 + index * 0.1,
+                  ease: [0.6, 0.01, 0.05, 0.95]
+                }}
+                className="inline-block text-7xl md:text-9xl font-light tracking-tight"
+                style={{
+                  textShadow: '0 2px 20px rgba(0, 198, 195, 0.3)',
+                }}
+              >
+                {letter}
+              </motion.span>
+            ))}
+          </div>
 
           <motion.p
-            className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide mb-8"
+            className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide mb-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 1.2, duration: 0.8 }}
           >
             by Lavern Williams
           </motion.p>
@@ -122,16 +135,19 @@ const Index = () => {
             className="text-2xl md:text-3xl mb-4 font-medium"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 1.4, duration: 0.8 }}
+            style={{
+              textShadow: '0 1px 10px rgba(0, 0, 0, 0.1)',
+            }}
           >
             Adaptive AI for Real-World Problem Solving.
           </motion.p>
 
           <motion.p
-            className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
+            className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 1.6, duration: 0.8 }}
           >
             Fix-ISH is an intelligent assistant that understands what you see, detects what's wrong, 
             and shows you how to fix it — step by step.
@@ -141,15 +157,16 @@ const Index = () => {
             className="flex flex-col sm:flex-row gap-4 justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 1.8, duration: 0.8 }}
           >
-            <Button size="lg" className="shadow-lg">
+            <Button size="lg" className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               Get Started <ArrowRight className="ml-2" />
             </Button>
             <Button 
               variant="minimal" 
               size="lg"
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:shadow-md transition-shadow duration-300"
             >
               Explore Features
             </Button>
@@ -157,6 +174,7 @@ const Index = () => {
               variant="ghost" 
               size="lg"
               onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:bg-muted/50 transition-colors duration-300"
             >
               Send Feedback
             </Button>
