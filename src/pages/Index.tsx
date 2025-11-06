@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Brain, Eye, Video, MessageSquare, RotateCw, ArrowRight } from "lucide-react";
+import { Brain, Eye, Video, MessageSquare, RotateCw, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -297,6 +297,223 @@ const Index = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-32 px-4 relative z-10 gradient-subtle">
+        <div className="container mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-light mb-4 tracking-tight">
+              Pricing.
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Choose the plan that fits you best.
+            </p>
+          </motion.div>
+
+          {/* Pricing Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+            {/* Starter Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl transition-all duration-300"
+            >
+              <h3 className="text-2xl font-medium mb-2">Starter</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-light">Free</span>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                Perfect for quick fixes and testing.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">5 uploads per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Basic video tutorials</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">7-day chat memory</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Community support</span>
+                </li>
+              </ul>
+              <Button 
+                onClick={() => navigate("/chat")}
+                className="w-full" 
+                variant="outline"
+              >
+                Get Started
+              </Button>
+            </motion.div>
+
+            {/* Pro Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-card p-8 rounded-xl border-2 border-primary relative hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
+            >
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                Most Popular
+              </div>
+              <h3 className="text-2xl font-medium mb-2">Pro</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-light">$29</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                For everyday repair pros and creators.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Unlimited uploads</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Advanced AI tutorials</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Unlimited chat memory</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">AR overlay access</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Priority support</span>
+                </li>
+              </ul>
+              <Button 
+                onClick={() => navigate("/chat")}
+                className="w-full"
+              >
+                Get Started
+              </Button>
+            </motion.div>
+
+            {/* Enterprise Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl transition-all duration-300"
+            >
+              <h3 className="text-2xl font-medium mb-2">Enterprise</h3>
+              <div className="mb-6">
+                <span className="text-2xl font-light">Contact us</span>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                For teams and custom integrations.
+              </p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Everything in Pro</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Custom AI training</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">API access & integrations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Dedicated account manager</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">SLA & white-label options</span>
+                </li>
+              </ul>
+              <Button 
+                onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full" 
+                variant="outline"
+              >
+                Get Started
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Comparison Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="overflow-x-auto"
+          >
+            <table className="w-full bg-card rounded-xl border border-border overflow-hidden">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-4 font-medium">Feature</th>
+                  <th className="text-center p-4 font-medium">Starter</th>
+                  <th className="text-center p-4 font-medium bg-primary/5">Pro</th>
+                  <th className="text-center p-4 font-medium">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                <tr className="border-b border-border">
+                  <td className="p-4">Monthly Uploads</td>
+                  <td className="text-center p-4">5</td>
+                  <td className="text-center p-4 bg-primary/5">Unlimited</td>
+                  <td className="text-center p-4">Unlimited</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="p-4">Video Tutorials</td>
+                  <td className="text-center p-4">Basic</td>
+                  <td className="text-center p-4 bg-primary/5">Advanced</td>
+                  <td className="text-center p-4">Advanced + Custom</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="p-4">Chat Memory</td>
+                  <td className="text-center p-4">7 days</td>
+                  <td className="text-center p-4 bg-primary/5">Unlimited</td>
+                  <td className="text-center p-4">Unlimited</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="p-4">AR Overlay</td>
+                  <td className="text-center p-4">—</td>
+                  <td className="text-center p-4 bg-primary/5"><Check className="w-5 h-5 text-primary mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="w-5 h-5 text-primary mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="p-4">Support</td>
+                  <td className="text-center p-4">Community</td>
+                  <td className="text-center p-4 bg-primary/5">Priority</td>
+                  <td className="text-center p-4">Dedicated</td>
+                </tr>
+                <tr>
+                  <td className="p-4">API Access</td>
+                  <td className="text-center p-4">—</td>
+                  <td className="text-center p-4 bg-primary/5">—</td>
+                  <td className="text-center p-4"><Check className="w-5 h-5 text-primary mx-auto" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </motion.div>
         </div>
       </section>
 
