@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Copy, Check, ChevronDown, ChevronUp, Maximize2, Box } from "lucide-react";
+import { Copy, Check, ChevronDown, ChevronUp, Box } from "lucide-react";
 import { ParsedMessage } from "./ParsedMessage";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+import { ImageGalleryBlock } from "./ImageGalleryBlock";
 
 interface EnhancedContentRendererProps {
   content: string;
@@ -12,11 +12,12 @@ interface EnhancedContentRendererProps {
 }
 
 interface ContentBlock {
-  type: "text" | "image" | "video" | "code" | "steps" | "3d";
+  type: "text" | "image" | "video" | "code" | "steps" | "3d" | "gallery";
   content: string;
   language?: string;
   alt?: string;
   url?: string;
+  images?: Array<{ url: string; alt?: string }>;
 }
 
 export const EnhancedContentRenderer = ({
@@ -182,7 +183,43 @@ function parseContent(content: string): ContentBlock[] {
     }
   }
 
-  return blocks.length > 0 ? blocks : [{ type: "text", content }];
+  // Group consecutive images into galleries
+  const finalBlocks: ContentBlock[] = [];
+  let imageGroup: ContentBlock[] = [];
+
+  blocks.forEach((block, index) => {
+    if (block.type === "image") {
+      imageGroup.push(block);
+    } else {
+      // Flush image group if we have 2+ images
+      if (imageGroup.length >= 2) {
+        finalBlocks.push({
+          type: "gallery",
+          content: "",
+          images: imageGroup.map((img) => ({ url: img.url!, alt: img.alt })),
+        });
+      } else if (imageGroup.length === 1) {
+        finalBlocks.push(imageGroup[0]);
+      }
+      imageGroup = [];
+      finalBlocks.push(block);
+    }
+
+    // Handle images at the end
+    if (index === blocks.length - 1 && imageGroup.length > 0) {
+      if (imageGroup.length >= 2) {
+        finalBlocks.push({
+          type: "gallery",
+          content: "",
+          images: imageGroup.map((img) => ({ url: img.url!, alt: img.alt })),
+        });
+      } else {
+        finalBlocks.push(imageGroup[0]);
+      }
+    }
+  });
+
+  return finalBlocks.length > 0 ? finalBlocks : [{ type: "text", content }];
 }
 
 function ContentBlock({
@@ -195,8 +232,10 @@ function ContentBlock({
   onTermClick: (term: string) => void;
 }) {
   switch (block.type) {
+    case "gallery":
+      return <ImageGalleryBlock images={block.images!} isDarkMode={isDarkMode} />;
     case "image":
-      return <ImageBlock url={block.url!} alt={block.alt} isDarkMode={isDarkMode} />;
+      return <ImageGalleryBlock images={[{ url: block.url!, alt: block.alt }]} isDarkMode={isDarkMode} />;
     case "video":
       return <VideoBlock url={block.url!} isDarkMode={isDarkMode} />;
     case "code":
@@ -215,31 +254,6 @@ function ContentBlock({
   }
 }
 
-function ImageBlock({ url, alt, isDarkMode }: { url: string; alt?: string; isDarkMode: boolean }) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div className="cursor-pointer group relative overflow-hidden rounded-lg border transition-all hover:shadow-lg"
-             style={{ 
-               borderColor: isDarkMode ? "rgba(0, 194, 178, 0.3)" : "rgba(0, 194, 178, 0.2)",
-               maxWidth: "300px"
-             }}>
-          <img
-            src={url}
-            alt={alt || "Image"}
-            className="w-full h-auto object-cover transition-transform group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Maximize2 className="w-8 h-8 text-white" />
-          </div>
-        </div>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl">
-        <img src={url} alt={alt || "Image"} className="w-full h-auto rounded-lg" />
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function VideoBlock({ url, isDarkMode }: { url: string; isDarkMode: boolean }) {
   return (
