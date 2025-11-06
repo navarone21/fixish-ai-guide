@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { ParticleBackground } from "@/components/ParticleBackground";
+import { TechBackground } from "@/components/TechBackground";
+import { AnimatedHummingbird } from "@/components/AnimatedHummingbird";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
@@ -87,47 +88,35 @@ const Index = () => {
 
   return (
     <div className="min-h-screen relative">
-      <ParticleBackground />
+      <TechBackground />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <AnimatedHummingbird />
+        
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          <div className="flex items-center justify-center gap-8 mb-6">
-            <motion.img
-              src={logo}
-              alt="Fix-ISH Logo"
-              className="w-40 h-40 md:w-48 md:h-48 animate-hummingbird-flight"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              style={{ transformOrigin: "center" }}
-            />
-            
-            <div className="text-left">
-              <motion.h1
-                className="text-7xl md:text-9xl font-light tracking-tight uppercase"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                FIX-ISH
-              </motion.h1>
+          <motion.h1
+            className="text-7xl md:text-9xl font-light tracking-tight uppercase mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            FIX-ISH
+          </motion.h1>
 
-              <motion.p
-                className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                by Lavern Williams
-              </motion.p>
-            </div>
-          </div>
+          <motion.p
+            className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            by Lavern Williams
+          </motion.p>
 
           <motion.p
             className="text-2xl md:text-3xl mb-4 font-medium"
