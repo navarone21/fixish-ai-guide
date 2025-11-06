@@ -2,3 +2,9 @@ project_id = "heupadftmypiolkatzkg"
 
 [functions.n8n_bridge]
 verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false

@@ -9,6 +9,8 @@ import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { FeedbackRating } from "@/components/FeedbackRating";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -694,13 +696,18 @@ const ChatContent = () => {
 
                         {/* Feedback Rating for Assistant Messages */}
                         {message.role === "assistant" && !message.isStreaming && (
-                          <div className="mt-3 pt-3 border-t" style={{ borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.15)" }}>
-                            <FeedbackRating
-                              messageId={message.id}
-                              sessionId={currentConversationId || "default"}
-                              isDarkMode={isDarkMode}
-                            />
-                          </div>
+                          <>
+                            <div className="mt-3 pt-3 border-t" style={{ borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.15)" }}>
+                              <FeedbackRating
+                                messageId={message.id}
+                                sessionId={currentConversationId || "default"}
+                                isDarkMode={isDarkMode}
+                              />
+                            </div>
+                            
+                            {/* Audio Player */}
+                            <AudioPlayer text={message.content} isDarkMode={isDarkMode} />
+                          </>
                         )}
                       </div>
 
@@ -881,15 +888,10 @@ const ChatContent = () => {
               <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={isLoading}
-              className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
-              title="Voice input (coming soon)"
-            >
-              <Mic className="w-5 h-5" style={{ color: "#00C2B2" }} />
-            </Button>
+            <VoiceRecorder
+              onTranscript={(text) => setInput(text)}
+              isDarkMode={isDarkMode}
+            />
 
             <Textarea
               ref={textareaRef}
