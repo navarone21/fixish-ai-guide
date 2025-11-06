@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X } from "lucide-react";
+import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
+import { ConversationSidebar } from "@/components/ConversationSidebar";
 import logo from "@/assets/logo-minimal.png";
 
 interface Message {
@@ -16,6 +17,14 @@ interface Message {
   timestamp: Date;
   files?: UploadedFile[];
   isStreaming?: boolean;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastMessage: string;
+  timestamp: Date;
 }
 
 interface UploadedFile {
@@ -28,6 +37,26 @@ interface UploadedFile {
 const ChatContent = () => {
   const { theme, toggleTheme } = useChatTheme();
   const isDarkMode = theme === "dark";
+  
+  // Load conversations from localStorage
+  const loadConversations = (): Conversation[] => {
+    const stored = localStorage.getItem("fixish_conversations");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.map((conv: any) => ({
+        ...conv,
+        messages: conv.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        })),
+        timestamp: new Date(conv.timestamp),
+      }));
+    }
+    return [];
+  };
+
+  const [conversations, setConversations] = useState<Conversation[]>(loadConversations);
+  const [currentConversationId, setCurrentConversationId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -44,6 +73,54 @@ const ChatContent = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Save conversations to localStorage
+  useEffect(() => {
+    localStorage.setItem("fixish_conversations", JSON.stringify(conversations));
+  }, [conversations]);
+
+  // Initialize or load current conversation
+  useEffect(() => {
+    if (!currentConversationId && conversations.length > 0) {
+      setCurrentConversationId(conversations[0].id);
+      setMessages(conversations[0].messages);
+    }
+  }, []);
+
+  // Update conversation when messages change
+  useEffect(() => {
+    if (currentConversationId && messages.length > 1) {
+      const lastUserMessage = messages
+        .filter((m) => m.role === "user")
+        .pop();
+      const title =
+        lastUserMessage?.content.slice(0, 50) || "New Conversation";
+      const lastMessage =
+        messages[messages.length - 1]?.content.slice(0, 100) || "";
+
+      setConversations((prev) => {
+        const existing = prev.find((c) => c.id === currentConversationId);
+        if (existing) {
+          return prev.map((c) =>
+            c.id === currentConversationId
+              ? { ...c, title, lastMessage, messages, timestamp: new Date() }
+              : c
+          );
+        } else {
+          return [
+            ...prev,
+            {
+              id: currentConversationId,
+              title,
+              lastMessage,
+              messages,
+              timestamp: new Date(),
+            },
+          ];
+        }
+      });
+    }
+  }, [messages, currentConversationId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,7 +168,9 @@ const ChatContent = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleClearChat = () => {
+  const handleNewChat = () => {
+    const newConvId = `conv_${Date.now()}`;
+    setCurrentConversationId(newConvId);
     setMessages([
       {
         id: "welcome",
@@ -101,9 +180,52 @@ const ChatContent = () => {
       },
     ]);
     toast({
-      title: "Chat cleared",
+      title: "New chat started",
       description: "Starting a fresh conversation",
     });
+  };
+
+  const handleSelectConversation = (id: string) => {
+    const conversation = conversations.find((c) => c.id === id);
+    if (conversation) {
+      setCurrentConversationId(id);
+      setMessages(conversation.messages);
+    }
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (currentConversationId === id) {
+      handleNewChat();
+    }
+    toast({
+      title: "Conversation deleted",
+      description: "The conversation has been removed",
+    });
+  };
+
+  const handleShareMessage = (message: Message) => {
+    const shareText = `Fix-ISH AI: ${message.content}`;
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Fix-ISH AI Response",
+          text: shareText,
+        })
+        .catch(() => {
+          navigator.clipboard.writeText(shareText);
+          toast({
+            title: "Copied to clipboard",
+            description: "Message copied to clipboard",
+          });
+        });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast({
+        title: "Copied to clipboard",
+        description: "Message copied to clipboard",
+      });
+    }
   };
 
   const streamResponse = async (response: Response, messageId: string) => {
@@ -168,6 +290,12 @@ const ChatContent = () => {
 
   const handleSend = async () => {
     if ((!input.trim() && uploadedFiles.length === 0) || isLoading) return;
+
+    // Initialize conversation if needed
+    if (!currentConversationId) {
+      const newConvId = `conv_${Date.now()}`;
+      setCurrentConversationId(newConvId);
+    }
 
     const userFiles: UploadedFile[] = uploadedFiles.map(file => ({
       name: file.name,
@@ -294,62 +422,65 @@ const ChatContent = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden transition-colors duration-300" 
-         style={{ background: isDarkMode ? "linear-gradient(135deg, #1A1C1E 0%, #2A2C2E 100%)" : "linear-gradient(135deg, hsl(210 17% 98%) 0%, hsl(220 14% 96%) 100%)" }}>
-      
-      {/* Ambient Background */}
-      {isDarkMode && <AmbientWorkshopGlow />}
+    <div className="h-screen flex relative overflow-hidden transition-colors duration-300">
+      {/* Sidebar */}
+      <ConversationSidebar
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        onNewChat={handleNewChat}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+        isDarkMode={isDarkMode}
+      />
 
-      {/* Header */}
-      <header className="relative z-50 backdrop-blur-xl border-b"
-              style={{
-                background: isDarkMode ? "rgba(35, 37, 39, 0.6)" : "rgba(255, 255, 255, 0.6)",
-                borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.3)",
-              }}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Left: Logo and Back */}
-            <div className="flex items-center gap-2 min-w-[120px]">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="hover:bg-primary/10 transition-all duration-300"
-              >
-                <ArrowLeft className="w-4 h-4" style={{ color: "#00C2B2" }} />
-              </Button>
-              <img src={logo} alt="Fix-ISH Logo" className="w-6 h-6" />
-            </div>
-            
-            {/* Center: Title */}
-            <h1 className="text-xl font-medium tracking-tight text-center flex-1" style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}>
-              Fix-ISH AI Assistant
-            </h1>
-            
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2 min-w-[120px] justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearChat}
-                className="hover:bg-primary/10 transition-all duration-300"
-                title="Clear Chat"
-              >
-                <Trash2 className="w-4 h-4" style={{ color: "#00C2B2" }} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleTheme}
-                className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.3)]"
-                title={isDarkMode ? "Light Mode" : "Dark Mode"}
-              >
-                {isDarkMode ? <Sun className="w-5 h-5" style={{ color: "#00C2B2" }} /> : <Moon className="w-5 h-5" style={{ color: "#00C2B2" }} />}
-              </Button>
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col relative" 
+           style={{ background: isDarkMode ? "linear-gradient(135deg, #1A1C1E 0%, #2A2C2E 100%)" : "linear-gradient(135deg, hsl(210 17% 98%) 0%, hsl(220 14% 96%) 100%)" }}>
+        
+        {/* Ambient Background */}
+        {isDarkMode && <AmbientWorkshopGlow />}
+
+        {/* Header */}
+        <header className="relative z-50 backdrop-blur-xl border-b"
+                style={{
+                  background: isDarkMode ? "rgba(35, 37, 39, 0.6)" : "rgba(255, 255, 255, 0.6)",
+                  borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.3)",
+                }}>
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              {/* Left: Logo and Back */}
+              <div className="flex items-center gap-2 min-w-[120px]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/")}
+                  className="hover:bg-primary/10 transition-all duration-300"
+                >
+                  <ArrowLeft className="w-4 h-4" style={{ color: "#00C2B2" }} />
+                </Button>
+                <img src={logo} alt="Fix-ISH Logo" className="w-6 h-6" />
+              </div>
+              
+              {/* Center: Title */}
+              <h1 className="text-xl font-medium tracking-tight text-center flex-1" style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}>
+                Fix-ISH AI Assistant
+              </h1>
+              
+              {/* Right: Actions */}
+              <div className="flex items-center gap-2 min-w-[120px] justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleTheme}
+                  className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.3)]"
+                  title={isDarkMode ? "Light Mode" : "Dark Mode"}
+                >
+                  {isDarkMode ? <Sun className="w-5 h-5" style={{ color: "#00C2B2" }} /> : <Moon className="w-5 h-5" style={{ color: "#00C2B2" }} />}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* Messages Area */}
       <main className="flex-1 overflow-y-auto relative z-10">
@@ -370,29 +501,30 @@ const ChatContent = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} group`}
                   >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-5 py-4 transition-all duration-300 ${
-                        message.role === "user"
-                          ? "shadow-lg"
-                          : "backdrop-blur-sm"
-                      }`}
-                      style={
-                        message.role === "user"
-                          ? {
-                              background: "#00C2B2",
-                              color: "#FFFFFF",
-                              boxShadow: "0 4px 20px rgba(0, 194, 178, 0.3)",
-                            }
-                          : {
-                              background: isDarkMode ? "#232527" : "rgba(255, 255, 255, 0.9)",
-                              color: isDarkMode ? "#EAEAEA" : "#1A1C1E",
-                              border: isDarkMode ? "1px solid rgba(0, 194, 178, 0.3)" : "1px solid rgba(0, 194, 178, 0.2)",
-                              boxShadow: isDarkMode ? "0 0 20px rgba(0, 194, 178, 0.1)" : "0 2px 10px rgba(0, 0, 0, 0.05)",
-                            }
-                      }
-                    >
+                    <div className="relative max-w-[80%]">
+                      <div
+                        className={`rounded-2xl px-5 py-4 transition-all duration-300 ${
+                          message.role === "user"
+                            ? "shadow-lg"
+                            : "backdrop-blur-sm"
+                        }`}
+                        style={
+                          message.role === "user"
+                            ? {
+                                background: "#00C2B2",
+                                color: "#FFFFFF",
+                                boxShadow: "0 4px 20px rgba(0, 194, 178, 0.3)",
+                              }
+                            : {
+                                background: isDarkMode ? "#232527" : "rgba(255, 255, 255, 0.9)",
+                                color: isDarkMode ? "#EAEAEA" : "#1A1C1E",
+                                border: isDarkMode ? "1px solid rgba(0, 194, 178, 0.3)" : "1px solid rgba(0, 194, 178, 0.2)",
+                                boxShadow: isDarkMode ? "0 0 20px rgba(0, 194, 178, 0.1)" : "0 2px 10px rgba(0, 0, 0, 0.05)",
+                              }
+                        }
+                      >
                       {/* File Previews */}
                       {message.files && message.files.length > 0 && (
                         <div className="mb-3 space-y-2">
@@ -440,9 +572,23 @@ const ChatContent = () => {
                         </p>
                       )}
                       
-                      <p className="text-xs mt-2" style={{ color: "#999999" }}>
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                        <p className="text-xs mt-2" style={{ color: "#999999" }}>
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+
+                      {/* Share Button */}
+                      {message.role === "assistant" && !message.isStreaming && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleShareMessage(message)}
+                          className="absolute -right-10 top-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                          title="Share message"
+                        >
+                          <Share2 className="w-4 h-4" style={{ color: "#00C2B2" }} />
+                        </Button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -537,7 +683,7 @@ const ChatContent = () => {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,video/*,.pdf,.doc,.docx"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -548,8 +694,19 @@ const ChatContent = () => {
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
+              title="Upload file"
             >
-              <Upload className="w-5 h-5" style={{ color: "#00C2B2" }} />
+              <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={isLoading}
+              className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
+              title="Voice input (coming soon)"
+            >
+              <Mic className="w-5 h-5" style={{ color: "#00C2B2" }} />
             </Button>
 
             <Textarea
@@ -595,6 +752,7 @@ const ChatContent = () => {
             Fix-ISH™ by Lavern Williams AI
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
