@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
+import { FeedbackRating } from "@/components/FeedbackRating";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -687,6 +688,17 @@ const ChatContent = () => {
                         <p className="text-xs mt-2" style={{ color: "#999999" }}>
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
+
+                        {/* Feedback Rating for Assistant Messages */}
+                        {message.role === "assistant" && !message.isStreaming && (
+                          <div className="mt-3 pt-3 border-t" style={{ borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.15)" }}>
+                            <FeedbackRating
+                              messageId={message.id}
+                              sessionId={currentConversationId || "default"}
+                              isDarkMode={isDarkMode}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Share Button */}
