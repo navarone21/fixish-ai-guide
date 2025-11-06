@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2 } from "lucide-react";
+import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,12 @@ import { useNavigate } from "react-router-dom";
 import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo-minimal.png";
 
 interface Message {
@@ -68,6 +74,7 @@ const ChatContent = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -228,6 +235,50 @@ const ChatContent = () => {
     }
   };
 
+  const handleCopyMessage = (message: Message) => {
+    navigator.clipboard.writeText(message.content);
+    toast({
+      title: "Copied",
+      description: "Message copied to clipboard",
+    });
+  };
+
+  const handleRegenerateResponse = (messageId: string) => {
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex > 0) {
+      const previousUserMessage = messages[messageIndex - 1];
+      if (previousUserMessage.role === "user") {
+        // Remove the assistant's response and regenerate
+        setMessages((prev) => prev.slice(0, messageIndex));
+        setInput(previousUserMessage.content);
+        setTimeout(() => handleSend(), 100);
+      }
+    }
+  };
+
+  const handleEditPrompt = (message: Message) => {
+    setInput(message.content);
+    toast({
+      title: "Editing message",
+      description: "Message loaded into input field",
+    });
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    toast({
+      title: "Message deleted",
+      description: "Message removed from conversation",
+    });
+  };
+
+  const quickActions = [
+    { id: "repair", label: "Repair", icon: Wrench, color: "#00C2B2" },
+    { id: "assemble", label: "Assemble", icon: Settings, color: "#00C2B2" },
+    { id: "learn", label: "Learn", icon: BookOpen, color: "#00C2B2" },
+    { id: "diagnose", label: "Diagnose", icon: Puzzle, color: "#00C2B2" },
+  ];
+
   const streamResponse = async (response: Response, messageId: string) => {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
@@ -348,7 +399,11 @@ const ChatContent = () => {
         message: userMessage.content || "Uploaded file",
         userId: getUserId(),
         ...(fileData && { file: fileData }),
+        ...(selectedMode && { mode: selectedMode }),
       };
+
+      // Clear selected mode after sending
+      setSelectedMode(null);
 
       const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
         method: "POST",
@@ -504,6 +559,63 @@ const ChatContent = () => {
                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} group`}
                   >
                     <div className="relative max-w-[80%]">
+                      {/* Context Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`absolute ${message.role === "user" ? "-left-10" : "-right-10"} top-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 z-10`}
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <div className="w-1 h-1 rounded-full" style={{ background: "#00C2B2" }} />
+                              <div className="w-1 h-1 rounded-full" style={{ background: "#00C2B2" }} />
+                              <div className="w-1 h-1 rounded-full" style={{ background: "#00C2B2" }} />
+                            </div>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align={message.role === "user" ? "start" : "end"}
+                          style={{
+                            background: isDarkMode ? "#232527" : "#FFFFFF",
+                            borderColor: isDarkMode ? "rgba(0, 194, 178, 0.3)" : "rgba(0, 194, 178, 0.2)",
+                          }}
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleCopyMessage(message)}
+                            style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy text
+                          </DropdownMenuItem>
+                          {message.role === "assistant" && !message.isStreaming && (
+                            <DropdownMenuItem
+                              onClick={() => handleRegenerateResponse(message.id)}
+                              style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}
+                            >
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                              Regenerate response
+                            </DropdownMenuItem>
+                          )}
+                          {message.role === "user" && (
+                            <DropdownMenuItem
+                              onClick={() => handleEditPrompt(message)}
+                              style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit prompt
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteMessage(message.id)}
+                            style={{ color: "#FF6B6B" }}
+                          >
+                            <Trash className="w-4 h-4 mr-2" />
+                            Delete message
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                       <div
                         className={`rounded-2xl px-5 py-4 transition-all duration-300 ${
                           message.role === "user"
@@ -647,6 +759,61 @@ const ChatContent = () => {
              }} />
         
         <div className="container mx-auto px-4 py-4 max-w-4xl">
+          {/* Quick Actions Bar */}
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium" style={{ color: isDarkMode ? "#EAEAEA" : "#1A1C1E" }}>
+              Quick Actions:
+            </span>
+            {quickActions.map((action) => (
+              <Button
+                key={action.id}
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedMode(action.id);
+                  toast({
+                    title: `${action.label} mode selected`,
+                    description: `Next message will use ${action.label} mode`,
+                  });
+                }}
+                className={`h-8 gap-1.5 transition-all duration-300 ${
+                  selectedMode === action.id
+                    ? "shadow-md"
+                    : "hover:bg-primary/10"
+                }`}
+                style={
+                  selectedMode === action.id
+                    ? {
+                        background: "rgba(0, 194, 178, 0.15)",
+                        color: action.color,
+                        borderColor: action.color,
+                        border: "1px solid",
+                      }
+                    : {}
+                }
+              >
+                <action.icon className="w-4 h-4" style={{ color: action.color }} />
+                <span className="text-xs">{action.label}</span>
+              </Button>
+            ))}
+            {selectedMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedMode(null);
+                  toast({
+                    title: "Mode cleared",
+                    description: "Back to normal mode",
+                  });
+                }}
+                className="h-8"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+
           {/* File Previews */}
           {uploadedFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
