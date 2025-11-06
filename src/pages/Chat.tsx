@@ -11,6 +11,7 @@ import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { FeedbackRating } from "@/components/FeedbackRating";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { ParsedMessage } from "@/components/ParsedMessage";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -273,6 +274,15 @@ const ChatContent = () => {
     toast({
       title: "Message deleted",
       description: "Message removed from conversation",
+    });
+  };
+
+  const handleTermClick = (term: string) => {
+    const newMessage = `Can you explain more about "${term}"? What should I know about it when fixing or repairing things?`;
+    setInput(newMessage);
+    toast({
+      title: "Learning more",
+      description: `Asking about ${term}`,
     });
   };
 
@@ -678,7 +688,15 @@ const ChatContent = () => {
                       
                       {message.content && (
                         <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                          {message.content}
+                          {message.role === "assistant" ? (
+                            <ParsedMessage
+                              content={message.content}
+                              isDarkMode={isDarkMode}
+                              onTermClick={handleTermClick}
+                            />
+                          ) : (
+                            message.content
+                          )}
                           {message.isStreaming && (
                             <motion.span 
                               className="inline-block w-2 h-4 ml-1"
@@ -689,7 +707,7 @@ const ChatContent = () => {
                           )}
                         </p>
                       )}
-                      
+
                         <p className="text-xs mt-2" style={{ color: "#999999" }}>
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
