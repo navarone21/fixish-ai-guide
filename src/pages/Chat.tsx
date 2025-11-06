@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
+import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
 import logo from "@/assets/logo-minimal.png";
 
 interface Message {
@@ -24,7 +25,9 @@ interface UploadedFile {
   size: number;
 }
 
-const Chat = () => {
+const ChatContent = () => {
+  const { theme, toggleTheme } = useChatTheme();
+  const isDarkMode = theme === "dark";
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -35,7 +38,6 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,14 +52,6 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -305,7 +299,7 @@ const Chat = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleTheme}
                 className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.3)]"
                 title={isDarkMode ? "Light Mode" : "Dark Mode"}
               >
@@ -562,6 +556,14 @@ const Chat = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const Chat = () => {
+  return (
+    <ChatThemeProvider>
+      <ChatContent />
+    </ChatThemeProvider>
   );
 };
 

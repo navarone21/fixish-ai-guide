@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { RepairWorkshopBackground } from "@/components/RepairWorkshopBackground";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
   const { toast } = useToast();
@@ -91,6 +92,11 @@ const Index = () => {
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <RepairWorkshopBackground />
+      
+      {/* Theme Toggle */}
+      <div className="fixed top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
