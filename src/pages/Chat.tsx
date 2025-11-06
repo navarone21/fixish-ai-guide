@@ -146,6 +146,26 @@ const ChatContent = () => {
     }
   };
 
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // Generate or retrieve userId from localStorage
+  const getUserId = () => {
+    let userId = localStorage.getItem("fixish_userId");
+    if (!userId) {
+      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem("fixish_userId", userId);
+    }
+    return userId;
+  };
+
   const handleSend = async () => {
     if ((!input.trim() && uploadedFiles.length === 0) || isLoading) return;
 
@@ -182,21 +202,37 @@ const ChatContent = () => {
     setMessages((prev) => [...prev, aiMessage]);
 
     try {
-      const formData = new FormData();
-      formData.append("message", userMessage.content);
-      formData.append("conversation_id", "session_" + Date.now());
-      
-      filesToSend.forEach((file, index) => {
-        formData.append(`file_${index}`, file);
-      });
+      // Convert files to base64 if present
+      let fileData = null;
+      if (filesToSend.length > 0) {
+        const file = filesToSend[0]; // Send first file
+        const base64 = await fileToBase64(file);
+        fileData = {
+          name: file.name,
+          type: file.type,
+          data: base64,
+          size: file.size,
+        };
+      }
 
-      const response = await fetch("https://fixish-ai.n8n.cloud/webhook/chat", {
+      // Prepare JSON payload
+      const payload = {
+        message: userMessage.content || "Uploaded file",
+        userId: getUserId(),
+        ...(fileData && { file: fileData }),
+      };
+
+      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get response from AI");
+        const errorText = await response.text().catch(() => "Unknown error");
+        throw new Error(`Backend returned ${response.status}: ${errorText}`);
       }
 
       // Check if response is streaming
@@ -217,9 +253,14 @@ const ChatContent = () => {
       }
     } catch (error) {
       console.error("Chat error:", error);
+      
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      
       toast({
         title: "Connection Error",
-        description: "Unable to reach Fix-ISH AI. Please try again.",
+        description: errorMessage.includes("Failed to fetch") 
+          ? "Unable to reach the backend. Check your network connection." 
+          : errorMessage,
         variant: "destructive",
       });
       
@@ -228,7 +269,7 @@ const ChatContent = () => {
           msg.id === aiMessageId
             ? {
                 ...msg,
-                content: "I'm having trouble connecting right now. Please try again in a moment.",
+                content: "I'm having trouble connecting to the backend right now. Please check your connection and try again.",
                 isStreaming: false,
               }
             : msg
