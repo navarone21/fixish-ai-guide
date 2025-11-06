@@ -6,8 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { EnergyBackground } from "@/components/EnergyBackground";
-import { HolographicHummingbird } from "@/components/HolographicHummingbird";
+import { RepairWorkshopBackground } from "@/components/RepairWorkshopBackground";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
@@ -87,78 +86,60 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-background via-background to-muted/10">
-      <EnergyBackground />
+    <div className="min-h-screen relative bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <RepairWorkshopBackground />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <HolographicHummingbird />
-        
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          {/* FIX-ISH with breathing glow */}
-          <motion.div 
-            className="mb-3 group cursor-default"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.3 }}
-          >
-            {['F', 'I', 'X', '-', 'I', 'S', 'H'].map((letter, index) => (
-              <motion.span
-                key={index}
-                initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-                animate={{ 
-                  opacity: 1, 
-                  y: 0, 
-                  filter: 'blur(0px)',
-                }}
-                transition={{ 
-                  duration: 0.6,
-                  delay: 0.3 + index * 0.1,
-                  ease: [0.6, 0.01, 0.05, 0.95]
-                }}
-                className="inline-block text-7xl md:text-9xl font-light tracking-tight relative"
-              >
-                {letter}
-                
-                {/* Breathing glow effect */}
+          {/* FIX-ISH with scanning light */}
+          <div className="mb-3 relative">
+            <div className="relative inline-block">
+              {['F', 'I', 'X', '-', 'I', 'S', 'H'].map((letter, index) => (
                 <motion.span
-                  className="absolute inset-0 -z-10"
-                  animate={{
-                    textShadow: [
-                      '0 0 20px rgba(0, 198, 195, 0.3)',
-                      '0 0 40px rgba(0, 198, 195, 0.5)',
-                      '0 0 20px rgba(0, 198, 195, 0.3)',
-                    ],
+                  key={index}
+                  initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0, 
+                    filter: 'blur(0px)',
                   }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
+                  transition={{ 
+                    duration: 0.6,
+                    delay: 0.3 + index * 0.1,
+                    ease: [0.6, 0.01, 0.05, 0.95]
                   }}
+                  className="inline-block text-7xl md:text-9xl font-light tracking-tight text-slate-800"
                 >
                   {letter}
                 </motion.span>
-
-                {/* Ripple on hover */}
-                <motion.span
-                  className="absolute inset-0 -z-20 opacity-0 group-hover:opacity-100"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(0, 198, 195, 0.2) 0%, transparent 70%)',
-                  }}
-                  initial={{ scale: 0.8 }}
-                  whileHover={{ scale: 1.3 }}
-                  transition={{ duration: 0.6 }}
-                />
-              </motion.span>
-            ))}
-          </motion.div>
+              ))}
+              
+              {/* Scanning light effect */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"
+                initial={{ x: '-100%' }}
+                animate={{ x: '200%' }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 4,
+                  ease: 'linear',
+                }}
+                style={{
+                  filter: 'blur(20px)',
+                }}
+              />
+            </div>
+          </div>
 
           <motion.p
-            className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide mb-10"
+            className="text-base md:text-lg text-slate-600 font-extralight tracking-wide mb-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2, duration: 0.8 }}
@@ -167,19 +148,16 @@ const Index = () => {
           </motion.p>
 
           <motion.p
-            className="text-2xl md:text-3xl mb-4 font-medium"
+            className="text-2xl md:text-3xl mb-4 font-medium text-slate-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.4, duration: 0.8 }}
-            style={{
-              textShadow: '0 1px 10px rgba(0, 0, 0, 0.1)',
-            }}
           >
             Adaptive AI for Real-World Problem Solving.
           </motion.p>
 
           <motion.p
-            className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
+            className="text-base md:text-lg text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.6, duration: 0.8 }}
@@ -194,28 +172,27 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.8, duration: 0.8 }}
           >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              className="relative"
+            >
               <Button 
                 size="lg" 
-                className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)]"
+                className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)] relative overflow-hidden"
               >
+                {/* Spark effect on hover */}
                 <motion.span
-                  animate={{
-                    textShadow: [
-                      '0 0 0px rgba(255, 255, 255, 0)',
-                      '0 0 10px rgba(255, 255, 255, 0.5)',
-                      '0 0 0px rgba(255, 255, 255, 0)',
-                    ],
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: '-100%', opacity: 0 }}
+                  whileHover={{ 
+                    x: '100%',
+                    opacity: [0, 1, 0],
+                    transition: { duration: 0.6 }
                   }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                >
-                  Get Started
-                </motion.span>
-                <ArrowRight className="ml-2" />
+                />
+                <span className="relative z-10">Get Started</span>
+                <ArrowRight className="ml-2 relative z-10" />
               </Button>
             </motion.div>
             
@@ -224,9 +201,18 @@ const Index = () => {
                 variant="minimal" 
                 size="lg"
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,198,195,0.3)] hover:bg-primary/10"
+                className="transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,198,195,0.3)] hover:bg-primary/10 relative overflow-hidden"
               >
-                Explore Features
+                <motion.span
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/30 to-transparent"
+                  initial={{ x: '-100%', opacity: 0 }}
+                  whileHover={{ 
+                    x: '100%',
+                    opacity: [0, 1, 0],
+                    transition: { duration: 0.6 }
+                  }}
+                />
+                <span className="relative z-10">Explore Features</span>
               </Button>
             </motion.div>
             
@@ -235,9 +221,18 @@ const Index = () => {
                 variant="ghost" 
                 size="lg"
                 onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
-                className="transition-all duration-300 hover:bg-muted/50 hover:shadow-[0_0_15px_rgba(0,198,195,0.2)]"
+                className="transition-all duration-300 hover:bg-slate-100 hover:shadow-[0_0_15px_rgba(0,198,195,0.2)] relative overflow-hidden"
               >
-                Send Feedback
+                <motion.span
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/40 to-transparent"
+                  initial={{ x: '-100%', opacity: 0 }}
+                  whileHover={{ 
+                    x: '100%',
+                    opacity: [0, 1, 0],
+                    transition: { duration: 0.6 }
+                  }}
+                />
+                <span className="relative z-10">Send Feedback</span>
               </Button>
             </motion.div>
           </motion.div>
