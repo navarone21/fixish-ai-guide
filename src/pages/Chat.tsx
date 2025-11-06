@@ -74,7 +74,7 @@ const ChatContent = () => {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi! I'm Fix-ISH, your AI repair assistant. Show me what you're working on or describe what needs fixing, and I'll guide you through it step by step.",
+      content: "**Fix-ish AI here.** I'm your cinematic repair technician – show me what's broken, stuck, or puzzling you. Upload a photo, describe the problem, or just ask. I'll help you see the solution clearly and guide you through every step. What are we fixing today?",
       timestamp: new Date(),
     },
   ]);
@@ -211,7 +211,7 @@ const ChatContent = () => {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hi! I'm Fix-ISH, your AI repair assistant. Show me what you're working on or describe what needs fixing, and I'll guide you through it step by step.",
+        content: "**Fix-ish AI here.** I'm your cinematic repair technician – show me what's broken, stuck, or puzzling you. Upload a photo, describe the problem, or just ask. I'll help you see the solution clearly and guide you through every step. What are we fixing today?",
         timestamp: new Date(),
       },
     ]);
@@ -451,6 +451,7 @@ const ChatContent = () => {
     try {
       // Convert files to base64 if present
       let fileData = null;
+      let analysisMode = selectedMode;
       if (filesToSend.length > 0) {
         const file = filesToSend[0]; // Send first file
         const base64 = await fileToBase64(file);
@@ -460,14 +461,19 @@ const ChatContent = () => {
           data: base64,
           size: file.size,
         };
+        
+        // Auto-detect repair analysis mode for images
+        if (file.type.startsWith('image/') && !analysisMode) {
+          analysisMode = 'repair_analysis';
+        }
       }
 
       // Prepare JSON payload
       const payload = {
-        message: userMessage.content || "Uploaded file",
+        message: userMessage.content || (fileData?.type.startsWith('image/') ? "Please analyze this image and provide repair guidance" : "Uploaded file"),
         userId: getUserId(),
         ...(fileData && { file: fileData }),
-        ...(selectedMode && { mode: selectedMode }),
+        ...(analysisMode && { mode: analysisMode }),
       };
 
       // Clear selected mode after sending
