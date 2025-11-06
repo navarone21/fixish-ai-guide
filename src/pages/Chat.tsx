@@ -482,7 +482,7 @@ const ChatContent = () => {
       setSelectedMode(null);
 
       // Call n8n webhook directly
-      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
+      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook-test/fixish-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
