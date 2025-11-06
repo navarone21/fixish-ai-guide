@@ -260,62 +260,71 @@ const Chat = () => {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card border-b border-border backdrop-blur-md">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/")}
-              className="hover:bg-accent/10"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <img src={logo} alt="Fix-ISH Logo" className="w-7 h-7" />
-            <h1 className="text-lg font-medium tracking-tight">Fix-ISH AI Assistant</h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearChat}
-              className="hover:bg-accent/10"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear Chat
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="hover:bg-accent/10"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
+      <header className="sticky top-0 z-50 bg-card/80 border-b border-border backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Logo and Back */}
+            <div className="flex items-center gap-2 min-w-[120px]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="hover:bg-accent/10"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <img src={logo} alt="Fix-ISH Logo" className="w-6 h-6" />
+            </div>
+            
+            {/* Center: Title */}
+            <h1 className="text-xl font-medium tracking-tight text-center flex-1">
+              Fix-ISH AI Assistant
+            </h1>
+            
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2 min-w-[120px] justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                className="hover:bg-accent/10"
+                title="Clear Chat"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="hover:bg-accent/10"
+                title={isDarkMode ? "Light Mode" : "Dark Mode"}
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Messages Area */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <main className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-background/95">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="space-y-6">
             <AnimatePresence mode="popLayout">
               {messages.map((message) => (
                 <motion.div
                   key={message.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-5 py-3 ${
+                    className={`max-w-[80%] rounded-2xl px-5 py-4 backdrop-blur-sm ${
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card border border-border"
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "bg-primary/10 border border-primary/20 shadow-md"
                     }`}
                   >
                     {/* File Previews */}
@@ -400,7 +409,7 @@ const Chat = () => {
       </main>
 
       {/* Input Area */}
-      <div className="sticky bottom-0 bg-card border-t border-border backdrop-blur-md">
+      <div className="sticky bottom-0 bg-card/80 border-t border-border backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           {/* File Previews */}
           {uploadedFiles.length > 0 && (
@@ -452,8 +461,8 @@ const Chat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Describe what you're fixing or ask a question..."
-              className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-muted"
+              placeholder="Describe what you're fixing or upload a video..."
+              className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-background/50 border-border focus:border-primary transition-colors"
               disabled={isLoading}
               maxLength={2000}
               rows={1}
