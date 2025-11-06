@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle } from "lucide-react";
+import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -81,7 +81,11 @@ const ChatContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState<string>("alloy");
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -135,13 +139,30 @@ const ChatContent = () => {
     }
   }, [messages, currentConversationId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: smooth ? "smooth" : "auto",
+        block: "end"
+      });
+    }
+  };
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    setShowScrollButton(!isNearBottom);
+    setIsUserScrolling(!isNearBottom);
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isUserScrolling) {
+      scrollToBottom();
+    }
+  }, [messages, isUserScrolling]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -286,6 +307,23 @@ const ChatContent = () => {
       description: `Asking about ${term}`,
     });
   };
+
+  const handleTranscript = (transcript: string) => {
+    setInput(transcript);
+    toast({
+      title: "Voice input received",
+      description: "Transcript added to input",
+    });
+  };
+
+  const voices = [
+    { id: "alloy", name: "Alloy" },
+    { id: "echo", name: "Echo" },
+    { id: "fable", name: "Fable" },
+    { id: "onyx", name: "Onyx" },
+    { id: "nova", name: "Nova" },
+    { id: "shimmer", name: "Shimmer" },
+  ];
 
   const quickActions = [
     { id: "repair", label: "Repair", icon: Wrench, color: "#00C2B2" },
@@ -494,7 +532,7 @@ const ChatContent = () => {
   };
 
   return (
-    <div className="h-screen flex relative overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen w-full overflow-hidden transition-colors duration-300">
       {/* Sidebar */}
       <ConversationSidebar
         conversations={conversations}
@@ -506,7 +544,7 @@ const ChatContent = () => {
       />
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative" 
+      <div className="flex flex-col flex-1 min-h-0 relative" 
            style={{ background: isDarkMode ? "linear-gradient(135deg, #1A1C1E 0%, #2A2C2E 100%)" : "linear-gradient(135deg, hsl(210 17% 98%) 0%, hsl(220 14% 96%) 100%)" }}>
         
         {/* Ambient Background */}
@@ -555,8 +593,12 @@ const ChatContent = () => {
         </header>
 
       {/* Messages Area */}
-      <main className="flex-1 overflow-y-auto relative z-10">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <main 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto relative z-10 scroll-smooth"
+      >
+        <div className="container mx-auto px-4 py-8 max-w-4xl pb-8">
           {/* Chat Container with Glassmorphism */}
           <div className="rounded-3xl p-6 backdrop-blur-xl shadow-2xl min-h-[calc(100vh-250px)]"
                style={{
@@ -566,15 +608,19 @@ const ChatContent = () => {
                }}>
             <div className="space-y-6">
               <AnimatePresence mode="popLayout">
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} group`}
-                  >
+                 {messages.map((message, index) => (
+                   <motion.div
+                     key={message.id}
+                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                     animate={{ opacity: 1, y: 0, scale: 1 }}
+                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                     transition={{ 
+                       duration: 0.4, 
+                       ease: [0.4, 0, 0.2, 1],
+                       delay: index === messages.length - 1 ? 0.1 : 0
+                     }}
+                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} group`}
+                   >
                     <div className="relative max-w-[80%]">
                       {/* Context Menu */}
                       <DropdownMenu>
@@ -724,8 +770,12 @@ const ChatContent = () => {
                               />
                             </div>
                             
-                            {/* Audio Player */}
-                            <AudioPlayer text={message.content} isDarkMode={isDarkMode} />
+                             {/* Audio Player */}
+                             <AudioPlayer 
+                               text={message.content} 
+                               isDarkMode={isDarkMode}
+                               voice={selectedVoice}
+                             />
                           </>
                         )}
                       </div>
@@ -801,17 +851,49 @@ const ChatContent = () => {
                     </div>
                   </div>
                 </motion.div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-        </div>
-      </main>
+               )}
+               <div ref={messagesEndRef} className="h-4" />
+             </div>
+           </div>
+         </div>
+       </main>
 
-      {/* Input Area */}
-      <div className="relative z-50 border-t backdrop-blur-xl"
+       {/* Scroll to Bottom Button */}
+       <AnimatePresence>
+         {showScrollButton && (
+           <motion.div
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             exit={{ opacity: 0, y: 20 }}
+             className="absolute bottom-24 right-8 z-40"
+           >
+             <Button
+               onClick={() => {
+                 setIsUserScrolling(false);
+                 scrollToBottom();
+               }}
+               className="rounded-full h-12 w-12 shadow-lg"
+               style={{
+                 background: "#00C2B2",
+                 color: "#FFFFFF",
+               }}
+               title="Scroll to bottom"
+             >
+               <motion.div
+                 animate={{ y: [0, 4, 0] }}
+                 transition={{ duration: 1, repeat: Infinity }}
+               >
+                 ↓
+               </motion.div>
+             </Button>
+           </motion.div>
+         )}
+       </AnimatePresence>
+
+      {/* Input Area - Fixed to bottom */}
+      <div className="relative z-50 border-t backdrop-blur-xl flex-shrink-0"
            style={{
-             background: isDarkMode ? "rgba(35, 37, 39, 0.6)" : "rgba(255, 255, 255, 0.6)",
+             background: isDarkMode ? "rgba(35, 37, 39, 0.95)" : "rgba(255, 255, 255, 0.95)",
              borderColor: isDarkMode ? "rgba(0, 194, 178, 0.2)" : "rgba(0, 194, 178, 0.3)",
            }}>
         {/* Teal glow line */}
@@ -877,6 +959,56 @@ const ChatContent = () => {
             )}
           </div>
 
+          {/* Voice & Settings Row */}
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: isDarkMode ? "#999" : "#666" }}>
+                Voice input available below
+              </span>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  style={{ color: "#00C2B2" }}
+                >
+                  <Headphones className="w-4 h-4" />
+                  <span className="text-xs">{voices.find(v => v.id === selectedVoice)?.name}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                style={{
+                  background: isDarkMode ? "#232527" : "#FFFFFF",
+                  borderColor: isDarkMode ? "rgba(0, 194, 178, 0.3)" : "rgba(0, 194, 178, 0.2)",
+                }}
+              >
+                {voices.map((voice) => (
+                  <DropdownMenuItem
+                    key={voice.id}
+                    onClick={() => {
+                      setSelectedVoice(voice.id);
+                      toast({
+                        title: "Voice changed",
+                        description: `Now using ${voice.name} voice`,
+                      });
+                    }}
+                    style={{ 
+                      color: isDarkMode ? "#EAEAEA" : "#1A1C1E",
+                      background: selectedVoice === voice.id ? "rgba(0, 194, 178, 0.1)" : "transparent"
+                    }}
+                  >
+                    {selectedVoice === voice.id && "✓ "}
+                    {voice.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* File Previews */}
           {uploadedFiles.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -926,16 +1058,17 @@ const ChatContent = () => {
               className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
               title="Upload file"
             >
-              <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
+            <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
             </Button>
 
             <VoiceRecorder
-              onTranscript={(text) => setInput(text)}
+              onTranscript={handleTranscript}
               isDarkMode={isDarkMode}
             />
 
-            <Textarea
-              ref={textareaRef}
+            <div className="flex-1 relative">
+              <Textarea
+                ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -958,6 +1091,7 @@ const ChatContent = () => {
               maxLength={2000}
               rows={1}
             />
+            </div>
             
             <Button
               onClick={handleSend}

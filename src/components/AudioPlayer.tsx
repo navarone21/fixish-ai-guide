@@ -8,9 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface AudioPlayerProps {
   text: string;
   isDarkMode: boolean;
+  voice?: string;
 }
 
-export const AudioPlayer = ({ text, isDarkMode }: AudioPlayerProps) => {
+export const AudioPlayer = ({ text, isDarkMode, voice = "alloy" }: AudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export const AudioPlayer = ({ text, isDarkMode }: AudioPlayerProps) => {
     try {
       // Call text-to-speech edge function
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice: 'alloy' }
+        body: { text, voice }
       });
 
       if (error) throw error;
