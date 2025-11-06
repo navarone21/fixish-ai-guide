@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, MessageSquare, Share2, X, Menu } from "lucide-react";
+import { Plus, Search, MessageSquare, Share2, X, Menu, Archive, Trash2, ChevronLeft, ChevronRight, Flag, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface Conversation {
   id: string;
   title: string;
   lastMessage: string;
   timestamp: Date;
+  archived?: boolean;
 }
 
 interface ConversationSidebarProps {
@@ -18,7 +27,11 @@ interface ConversationSidebarProps {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
+  onArchiveConversation?: (id: string) => void;
+  onShareConversation?: (id: string) => void;
   isDarkMode: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const ConversationSidebar = ({
@@ -27,16 +40,64 @@ export const ConversationSidebar = ({
   onNewChat,
   onSelectConversation,
   onDeleteConversation,
+  onArchiveConversation,
+  onShareConversation,
   isDarkMode,
+  isCollapsed = false,
+  onToggleCollapse,
 }: ConversationSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const { toast } = useToast();
 
-  const filteredConversations = conversations.filter(
-    (conv) =>
+  const filteredConversations = conversations.filter((conv) => {
+    const matchesSearch =
       conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesArchiveFilter = showArchived ? conv.archived : !conv.archived;
+    return matchesSearch && matchesArchiveFilter;
+  });
+
+  const handleShare = (conv: Conversation) => {
+    const shareText = `Check out this conversation: ${conv.title}`;
+    const shareUrl = `${window.location.origin}/chat?id=${conv.id}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: conv.title,
+        text: shareText,
+        url: shareUrl,
+      }).catch(() => {
+        navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Conversation link copied to clipboard",
+        });
+      });
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied",
+        description: "Conversation link copied to clipboard",
+      });
+    }
+    onShareConversation?.(conv.id);
+  };
+
+  const handleArchive = (conv: Conversation) => {
+    onArchiveConversation?.(conv.id);
+    toast({
+      title: conv.archived ? "Unarchived" : "Archived",
+      description: `Conversation ${conv.archived ? "restored" : "archived"}`,
+    });
+  };
+
+  const handleReport = (conv: Conversation) => {
+    toast({
+      title: "Report submitted",
+      description: "Thank you for your feedback",
+    });
+  };
 
   const sidebarBg = isDarkMode
     ? "rgba(26, 28, 30, 0.95)"
@@ -47,108 +108,120 @@ export const ConversationSidebar = ({
   const textColor = isDarkMode ? "#EAEAEA" : "#1A1C1E";
   const mutedColor = "#999999";
 
-  return (
-    <>
-      {/* Toggle Button - Always Visible */}
-      {!isOpen && (
+  if (isCollapsed) {
+    return (
+      <motion.div
+        initial={false}
+        animate={{ width: 60 }}
+        className="h-full backdrop-blur-xl border-r flex flex-col items-center py-4 gap-4"
+        style={{
+          background: sidebarBg,
+          borderColor: borderColor,
+        }}
+      >
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setIsOpen(true)}
-          className="fixed top-20 left-4 z-50 hover:bg-primary/10 transition-all duration-300 shadow-lg"
-          style={{
-            background: isDarkMode ? "rgba(35, 37, 39, 0.95)" : "rgba(255, 255, 255, 0.95)",
-            borderColor: borderColor,
-            border: "1px solid",
-          }}
-          title="Open chat history"
+          onClick={onToggleCollapse}
+          title="Expand sidebar"
         >
-          <Menu className="w-5 h-5" style={{ color: "#00C2B2" }} />
+          <ChevronRight className="w-5 h-5" style={{ color: "#00C2B2" }} />
         </Button>
-      )}
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onNewChat}
+          title="New chat"
+        >
+          <Plus className="w-5 h-5" style={{ color: "#00C2B2" }} />
+        </Button>
 
-      {/* Sidebar */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Mobile Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowArchived(!showArchived)}
+          title="Toggle archived"
+        >
+          <Archive className="w-5 h-5" style={{ color: "#00C2B2" }} />
+        </Button>
+      </motion.div>
+    );
+  }
 
-            {/* Sidebar Content */}
-            <motion.div
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="fixed top-0 left-0 h-full w-80 z-50 backdrop-blur-xl border-r flex flex-col shadow-2xl"
-              style={{
-                background: sidebarBg,
-                borderColor: borderColor,
-              }}
-            >
-              {/* Close Button - Always Visible */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 hover:bg-primary/10 transition-all duration-300"
-                title="Close chat history"
-              >
-                <X className="w-5 h-5" style={{ color: "#00C2B2" }} />
-              </Button>
+  return (
+    <motion.div
+      initial={false}
+      animate={{ width: 280 }}
+      className="h-full backdrop-blur-xl border-r flex flex-col"
+      style={{
+        background: sidebarBg,
+        borderColor: borderColor,
+      }}
+    >
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: borderColor }}>
+        <h2 className="text-lg font-semibold" style={{ color: textColor }}>
+          Fix-ISH AI
+        </h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleCollapse}
+          title="Collapse sidebar"
+        >
+          <ChevronLeft className="w-5 h-5" style={{ color: "#00C2B2" }} />
+        </Button>
+      </div>
 
-              {/* Header */}
-              <div className="p-4 border-b" style={{ borderColor: borderColor }}>
-                <h2
-                  className="text-lg font-semibold mb-4"
-                  style={{ color: textColor }}
-                >
-                  Fix-ISH AI
-                </h2>
+      {/* Actions */}
+      <div className="p-4 space-y-3">
+        {/* New Chat Button */}
+        <Button
+          onClick={onNewChat}
+          className="w-full justify-start gap-2"
+          style={{
+            background: "#00C2B2",
+            color: "#FFFFFF",
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          New Chat
+        </Button>
 
-                {/* New Chat Button */}
-                <Button
-                  onClick={onNewChat}
-                  className="w-full justify-start gap-2 mb-4"
-                  style={{
-                    background: "#00C2B2",
-                    color: "#FFFFFF",
-                  }}
-                >
-                  <Plus className="w-4 h-4" />
-                  New Chat
-                </Button>
+        {/* Archive Toggle */}
+        <Button
+          variant="ghost"
+          onClick={() => setShowArchived(!showArchived)}
+          className="w-full justify-start gap-2"
+          style={{ color: textColor }}
+        >
+          <Archive className="w-4 h-4" />
+          {showArchived ? "Active Chats" : "Archived"}
+        </Button>
 
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                    style={{ color: mutedColor }}
-                  />
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                    style={{
-                      background: isDarkMode
-                        ? "rgba(0, 0, 0, 0.2)"
-                        : "rgba(255, 255, 255, 0.8)",
-                      color: textColor,
-                      borderColor: borderColor,
-                    }}
-                  />
-                </div>
-              </div>
+        {/* Search Bar */}
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+            style={{ color: mutedColor }}
+          />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+            style={{
+              background: isDarkMode ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.8)",
+              color: textColor,
+              borderColor: borderColor,
+            }}
+          />
+        </div>
+      </div>
 
-              {/* Conversations List */}
-              <ScrollArea className="flex-1 p-2">
+      {/* Conversations List */}
+      <ScrollArea className="flex-1 p-2">
                 <div className="space-y-1">
                   {filteredConversations.length === 0 ? (
                     <div className="text-center py-8 px-4">
@@ -168,7 +241,7 @@ export const ConversationSidebar = ({
                         key={conv.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`group relative rounded-lg p-3 cursor-pointer transition-all ${
+                        className={`group relative rounded-lg p-3 transition-all ${
                           conv.id === currentConversationId
                             ? "shadow-md"
                             : "hover:bg-primary/5"
@@ -181,9 +254,11 @@ export const ConversationSidebar = ({
                                 : "rgba(0, 194, 178, 0.1)"
                               : "transparent",
                         }}
-                        onClick={() => onSelectConversation(conv.id)}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div
+                          className="flex items-start justify-between gap-2 cursor-pointer"
+                          onClick={() => onSelectConversation(conv.id)}
+                        >
                           <div className="flex-1 min-w-0">
                             <h3
                               className="text-sm font-medium truncate mb-1"
@@ -204,27 +279,74 @@ export const ConversationSidebar = ({
                               {new Date(conv.timestamp).toLocaleDateString()}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteConversation(conv.id);
-                            }}
-                          >
-                            <X className="w-3 h-3" style={{ color: "#00C2B2" }} />
-                          </Button>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="w-4 h-4" style={{ color: "#00C2B2" }} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              style={{
+                                background: isDarkMode ? "#232527" : "#FFFFFF",
+                                borderColor: borderColor,
+                              }}
+                            >
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShare(conv);
+                                }}
+                                style={{ color: textColor }}
+                              >
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Share
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchive(conv);
+                                }}
+                                style={{ color: textColor }}
+                              >
+                                <Archive className="w-4 h-4 mr-2" />
+                                {conv.archived ? "Unarchive" : "Archive"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReport(conv);
+                                }}
+                                style={{ color: textColor }}
+                              >
+                                <Flag className="w-4 h-4 mr-2" />
+                                Report
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteConversation(conv.id);
+                                }}
+                                style={{ color: "#FF6B6B" }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </motion.div>
                     ))
                   )}
-                </div>
-              </ScrollArea>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+        </div>
+      </ScrollArea>
+    </motion.div>
   );
 };

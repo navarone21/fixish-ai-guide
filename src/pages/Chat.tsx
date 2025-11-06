@@ -37,6 +37,7 @@ interface Conversation {
   messages: Message[];
   lastMessage: string;
   timestamp: Date;
+  archived?: boolean;
 }
 
 interface UploadedFile {
@@ -84,6 +85,7 @@ const ChatContent = () => {
   const [selectedVoice, setSelectedVoice] = useState<string>("alloy");
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -236,6 +238,19 @@ const ChatContent = () => {
       title: "Conversation deleted",
       description: "The conversation has been removed",
     });
+  };
+
+  const handleArchiveConversation = (id: string) => {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, archived: !c.archived } : c
+      )
+    );
+  };
+
+  const handleShareConversation = (id: string) => {
+    // Already handled in ConversationSidebar
+    console.log("Sharing conversation:", id);
   };
 
   const handleShareMessage = (message: Message) => {
@@ -540,7 +555,11 @@ const ChatContent = () => {
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
         onDeleteConversation={handleDeleteConversation}
+        onArchiveConversation={handleArchiveConversation}
+        onShareConversation={handleShareConversation}
         isDarkMode={isDarkMode}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       {/* Main Chat Area */}
