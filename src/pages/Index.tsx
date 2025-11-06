@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { SchematicBackground } from "@/components/SchematicBackground";
+import { EnergyBackground } from "@/components/EnergyBackground";
+import { HolographicHummingbird } from "@/components/HolographicHummingbird";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
@@ -86,38 +87,75 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-background via-background to-muted/20">
-      <SchematicBackground />
+    <div className="min-h-screen relative bg-gradient-to-br from-background via-background to-muted/10">
+      <EnergyBackground />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <HolographicHummingbird />
+        
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          {/* Letter-by-letter animation for FIX-ISH */}
-          <div className="mb-3">
+          {/* FIX-ISH with breathing glow */}
+          <motion.div 
+            className="mb-3 group cursor-default"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+          >
             {['F', 'I', 'X', '-', 'I', 'S', 'H'].map((letter, index) => (
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0, 
+                  filter: 'blur(0px)',
+                }}
                 transition={{ 
                   duration: 0.6,
                   delay: 0.3 + index * 0.1,
                   ease: [0.6, 0.01, 0.05, 0.95]
                 }}
-                className="inline-block text-7xl md:text-9xl font-light tracking-tight"
-                style={{
-                  textShadow: '0 2px 20px rgba(0, 198, 195, 0.3)',
-                }}
+                className="inline-block text-7xl md:text-9xl font-light tracking-tight relative"
               >
                 {letter}
+                
+                {/* Breathing glow effect */}
+                <motion.span
+                  className="absolute inset-0 -z-10"
+                  animate={{
+                    textShadow: [
+                      '0 0 20px rgba(0, 198, 195, 0.3)',
+                      '0 0 40px rgba(0, 198, 195, 0.5)',
+                      '0 0 20px rgba(0, 198, 195, 0.3)',
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  {letter}
+                </motion.span>
+
+                {/* Ripple on hover */}
+                <motion.span
+                  className="absolute inset-0 -z-20 opacity-0 group-hover:opacity-100"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(0, 198, 195, 0.2) 0%, transparent 70%)',
+                  }}
+                  initial={{ scale: 0.8 }}
+                  whileHover={{ scale: 1.3 }}
+                  transition={{ duration: 0.6 }}
+                />
               </motion.span>
             ))}
-          </div>
+          </motion.div>
 
           <motion.p
             className="text-base md:text-lg text-muted-foreground font-extralight tracking-wide mb-10"
@@ -156,25 +194,52 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.8, duration: 0.8 }}
           >
-            <Button size="lg" className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              Get Started <ArrowRight className="ml-2" />
-            </Button>
-            <Button 
-              variant="minimal" 
-              size="lg"
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              className="hover:shadow-md transition-shadow duration-300"
-            >
-              Explore Features
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="lg"
-              onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
-              className="hover:bg-muted/50 transition-colors duration-300"
-            >
-              Send Feedback
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                size="lg" 
+                className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)]"
+              >
+                <motion.span
+                  animate={{
+                    textShadow: [
+                      '0 0 0px rgba(255, 255, 255, 0)',
+                      '0 0 10px rgba(255, 255, 255, 0.5)',
+                      '0 0 0px rgba(255, 255, 255, 0)',
+                    ],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  Get Started
+                </motion.span>
+                <ArrowRight className="ml-2" />
+              </Button>
+            </motion.div>
+            
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                variant="minimal" 
+                size="lg"
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,198,195,0.3)] hover:bg-primary/10"
+              >
+                Explore Features
+              </Button>
+            </motion.div>
+            
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button 
+                variant="ghost" 
+                size="lg"
+                onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
+                className="transition-all duration-300 hover:bg-muted/50 hover:shadow-[0_0_15px_rgba(0,198,195,0.2)]"
+              >
+                Send Feedback
+              </Button>
+            </motion.div>
           </motion.div>
         </motion.div>
       </section>
