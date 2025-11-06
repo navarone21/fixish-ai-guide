@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { SchematicBackground } from "@/components/SchematicBackground";
-import { RealisticHummingbird } from "@/components/RealisticHummingbird";
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 
@@ -92,8 +91,6 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <RealisticHummingbird />
-        
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
