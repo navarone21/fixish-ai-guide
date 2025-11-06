@@ -1,1 +1,4 @@
 project_id = "heupadftmypiolkatzkg"
+
+[functions.n8n_bridge]
+verify_jwt = false

@@ -9,6 +9,7 @@ import { AmbientWorkshopGlow } from "@/components/AmbientWorkshopGlow";
 import { ChatThemeProvider, useChatTheme } from "@/contexts/ChatThemeContext";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { FeedbackRating } from "@/components/FeedbackRating";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -406,26 +407,18 @@ const ChatContent = () => {
       // Clear selected mode after sending
       setSelectedMode(null);
 
-      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      // Call edge function instead of direct n8n webhook
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('n8n_bridge', {
+        body: payload
       });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(`Backend returned ${response.status}: ${errorText}`);
+      if (functionError) {
+        throw new Error(functionError.message || "Failed to communicate with backend");
       }
 
       // Check if response is streaming
-      const contentType = response.headers.get("content-type");
-      if (contentType?.includes("text/event-stream") || contentType?.includes("text/plain")) {
-        await streamResponse(response, aiMessageId);
-      } else {
-        const data = await response.json();
-        const responseText = data.response || data.message || "I'm here to help! Could you provide more details?";
+      if (functionData && typeof functionData === 'object' && 'response' in functionData) {
+        const responseText = functionData.response || functionData.message || "I'm here to help! Could you provide more details?";
         
         setMessages((prev) =>
           prev.map((msg) =>
@@ -434,6 +427,16 @@ const ChatContent = () => {
               : msg
           )
         );
+      } else if (typeof functionData === 'string') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, content: functionData, isStreaming: false }
+              : msg
+          )
+        );
+      } else {
+        throw new Error("Unexpected response format from backend");
       }
     } catch (error) {
       console.error("Chat error:", error);
