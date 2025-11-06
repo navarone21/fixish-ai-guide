@@ -12,6 +12,9 @@ import { RepairWorkshopBackground } from "@/components/RepairWorkshopBackground"
 import { feedbackSchema, type FeedbackFormData } from "@/lib/validation";
 import logo from "@/assets/logo-minimal.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import testimonialJordan from "@/assets/testimonial-jordan.jpg";
+import testimonialTaylor from "@/assets/testimonial-taylor.jpg";
+import testimonialSam from "@/assets/testimonial-sam.jpg";
 
 const Index = () => {
   const { toast } = useToast();
@@ -764,17 +767,20 @@ const Index = () => {
               {
                 quote: "Fix-ISH saved me hours rebuilding my kitchen fan — it's like having an engineer in your pocket.",
                 author: "Jordan T.",
-                role: "DIY Enthusiast"
+                role: "DIY Enthusiast",
+                image: testimonialJordan
               },
               {
                 quote: "The future of hands-on learning. I fixed my car's AC with real-time help from Fix-ISH.",
                 author: "Taylor L.",
-                role: "Mechanic"
+                role: "Mechanic",
+                image: testimonialTaylor
               },
               {
                 quote: "It adapts to how I work — not the other way around. Brilliant execution.",
                 author: "Sam R.",
-                role: "Contractor"
+                role: "Contractor",
+                image: testimonialSam
               }
             ].map((testimonial, index) => (
               <motion.div
@@ -794,7 +800,12 @@ const Index = () => {
                 <p className="text-muted-foreground leading-relaxed mb-6 italic">
                   {testimonial.quote}
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={testimonial.image} 
+                    alt={testimonial.author}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 shadow-lg"
+                  />
                   <div>
                     <p className="font-medium">— {testimonial.author}</p>
                     <p className="text-sm text-muted-foreground">{testimonial.role}</p>
