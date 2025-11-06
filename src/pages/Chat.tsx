@@ -746,35 +746,57 @@ const ChatContent = () => {
                 ))}
               </AnimatePresence>
 
-              {/* Typing Indicator */}
+              {/* Typing Indicator with Wrench */}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="rounded-2xl px-5 py-4"
+                  <div className="rounded-2xl px-5 py-4 relative"
                        style={{
                          background: isDarkMode ? "#232527" : "rgba(255, 255, 255, 0.9)",
                          border: isDarkMode ? "1px solid rgba(0, 194, 178, 0.3)" : "1px solid rgba(0, 194, 178, 0.2)",
                        }}>
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-2 h-2 rounded-full"
-                          style={{ background: "#00C2B2" }}
-                          animate={{
-                            y: [0, -8, 0],
-                            opacity: [0.5, 1, 0.5],
-                          }}
-                          transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                            delay: i * 0.15,
+                    <div className="relative flex items-center justify-center w-12 h-12">
+                      {/* Pulsing glow background */}
+                      <motion.div
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          background: "radial-gradient(circle, rgba(0, 194, 178, 0.3) 0%, rgba(0, 194, 178, 0) 70%)",
+                          filter: "blur(8px)",
+                        }}
+                        animate={{
+                          scale: [1, 1.3, 1],
+                          opacity: [0.4, 0.7, 0.4],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      />
+                      
+                      {/* Wrench icon */}
+                      <motion.div
+                        animate={{
+                          rotate: [0, -15, 15, -10, 10, 0],
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <Wrench 
+                          className="w-6 h-6 relative z-10"
+                          style={{ 
+                            color: "#00C2B2",
+                            filter: "drop-shadow(0 0 8px rgba(0, 194, 178, 0.6))",
                           }}
                         />
-                      ))}
+                      </motion.div>
                     </div>
                   </div>
                 </motion.div>
