@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -513,6 +514,91 @@ const Index = () => {
                 </tr>
               </tbody>
             </table>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-32 px-4 relative z-10">
+        <div className="container mx-auto max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-light mb-4 tracking-tight">
+              Frequently Asked Questions.
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Everything you need to know about Fix-ISH.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Accordion type="single" collapsible className="space-y-4">
+              <AccordionItem value="item-1" className="bg-card border border-border rounded-xl px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="text-lg font-medium">Can I cancel anytime?</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5">
+                  Yes, absolutely. You can cancel your subscription at any time with no questions asked. 
+                  Your access will continue until the end of your current billing period, and you won't be 
+                  charged again. All your data remains accessible during this time.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="bg-card border border-border rounded-xl px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="text-lg font-medium">What file types can I upload?</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5">
+                  Fix-ISH accepts images (JPG, PNG, HEIC), videos (MP4, MOV, AVI), and documents (PDF, DOC). 
+                  Each file can be up to 20MB in size. For Pro and Enterprise plans, you can upload multiple 
+                  files simultaneously and create detailed repair documentation with annotated images.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="bg-card border border-border rounded-xl px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="text-lg font-medium">Is there a free trial?</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5">
+                  Our Starter plan is completely free and available indefinitely—no credit card required. 
+                  It gives you 5 uploads per month and access to basic AI tutorials. If you need more features, 
+                  you can upgrade to Pro at any time to unlock unlimited uploads, AR overlay, and priority support.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="bg-card border border-border rounded-xl px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="text-lg font-medium">Can I use Fix-ISH on mobile?</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5">
+                  Yes! Fix-ISH is fully responsive and works seamlessly on smartphones and tablets. 
+                  You can take photos directly with your device's camera and get real-time AI guidance 
+                  while working on repairs. The AR overlay feature is especially powerful on mobile devices 
+                  with Pro and Enterprise plans.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="bg-card border border-border rounded-xl px-6">
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="text-lg font-medium">How secure is my data?</span>
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-5">
+                  We take security seriously. All data is encrypted in transit and at rest using industry-standard 
+                  AES-256 encryption. Your uploads and conversations are stored on secure, SOC 2 compliant servers. 
+                  We never share your data with third parties, and you can delete your account and all associated 
+                  data at any time. Enterprise customers can opt for custom data residency and additional compliance options.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </motion.div>
         </div>
       </section>
