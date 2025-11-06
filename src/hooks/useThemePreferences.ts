@@ -37,10 +37,7 @@ export const useThemePreferences = (userId: string | null) => {
     try {
       setLoading(true);
       
-      await supabase.rpc('set_config', {
-        setting: 'app.user_id',
-        value: userId
-      });
+      await supabase.rpc('set_user_context', { p_user_id: userId });
 
       const { data, error } = await supabase
         .from('user_preferences')
@@ -77,10 +74,7 @@ export const useThemePreferences = (userId: string | null) => {
     // Save to database if user is logged in
     if (userId) {
       try {
-        await supabase.rpc('set_config', {
-          setting: 'app.user_id',
-          value: userId
-        });
+        await supabase.rpc('set_user_context', { p_user_id: userId });
 
         const { error } = await supabase
           .from('user_preferences')

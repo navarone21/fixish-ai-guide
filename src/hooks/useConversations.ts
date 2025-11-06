@@ -19,10 +19,7 @@ export const useConversations = (userId: string) => {
       setLoading(true);
       
       // Set the user_id for RLS
-      await supabase.rpc('set_config', {
-        setting: 'app.user_id',
-        value: userId
-      });
+      await supabase.rpc('set_user_context', { p_user_id: userId });
 
       const { data, error } = await supabase
         .from('conversations')
@@ -41,10 +38,7 @@ export const useConversations = (userId: string) => {
 
   const createConversation = async (title: string) => {
     try {
-      await supabase.rpc('set_config', {
-        setting: 'app.user_id',
-        value: userId
-      });
+      await supabase.rpc('set_user_context', { p_user_id: userId });
 
       const { data, error } = await supabase
         .from('conversations')
@@ -64,10 +58,7 @@ export const useConversations = (userId: string) => {
 
   const deleteConversation = async (conversationId: string) => {
     try {
-      await supabase.rpc('set_config', {
-        setting: 'app.user_id',
-        value: userId
-      });
+      await supabase.rpc('set_user_context', { p_user_id: userId });
 
       const { error } = await supabase
         .from('conversations')
@@ -85,10 +76,7 @@ export const useConversations = (userId: string) => {
 
   const updateConversationTitle = async (conversationId: string, title: string) => {
     try {
-      await supabase.rpc('set_config', {
-        setting: 'app.user_id',
-        value: userId
-      });
+      await supabase.rpc('set_user_context', { p_user_id: userId });
 
       const { error } = await supabase
         .from('conversations')
