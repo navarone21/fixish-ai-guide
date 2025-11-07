@@ -112,14 +112,13 @@ const ChatContent = () => {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
+        const response = await fetch("https://fix-ish.navaroneturner035.workers.dev", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: "Hello Fix-ish",
-            sessionId: "test_session"
+            message: "Hello Fix-ish"
           }),
         });
 
@@ -497,19 +496,18 @@ const ChatContent = () => {
         }
       }
 
-      // n8n webhook URL
-      const N8N_WEBHOOK_URL = "https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai";
+      // Fix-ish AI Cloudflare Worker backend
+      const FIXISH_AI_URL = "https://fix-ish.navaroneturner035.workers.dev";
 
-      // Prepare simplified JSON payload for n8n webhook
+      // Prepare JSON payload for Fix-ish AI
       const payload = {
         message: userMessage.content || "Please analyze this image and provide repair guidance",
-        sessionId: currentConversationId,
       };
 
-      console.log("Sending to n8n:", payload);
+      console.log("Sending to Fix-ish AI:", payload);
 
-      // Call n8n webhook
-      const response = await fetch(N8N_WEBHOOK_URL, {
+      // Call Fix-ish AI backend
+      const response = await fetch(FIXISH_AI_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -518,19 +516,23 @@ const ChatContent = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Backend returned ${response.status}`);
+        throw new Error(`Fix-ish AI backend returned ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("n8n response:", data);
+      console.log("Fix-ish AI response:", data);
 
-      // Update session ID if backend provides one
-      if (data.sessionId) {
-        setCurrentConversationId(data.sessionId);
+      // Extract reply from backend response
+      // Expected format: output[1].content[0].text
+      let replyText = "Sorry, Fix-ish is calibrating right now — please try again in a moment.";
+      
+      try {
+        if (data?.output?.[1]?.content?.[0]?.text) {
+          replyText = data.output[1].content[0].text;
+        }
+      } catch (e) {
+        console.error("Error extracting response:", e);
       }
-
-      // Extract reply from response
-      const replyText = data.reply || "I'm here to help! Could you provide more details?";
       
       setMessages((prev) =>
         prev.map((msg) =>
@@ -547,7 +549,7 @@ const ChatContent = () => {
       toast({
         title: "Connection Error",
         description: errorMessage.includes("Failed to fetch") 
-          ? "Unable to reach the n8n backend. Check your network connection or webhook URL." 
+          ? "Unable to reach Fix-ish AI backend. Check your network connection." 
           : errorMessage,
         variant: "destructive",
       });
@@ -557,7 +559,7 @@ const ChatContent = () => {
           msg.id === aiMessageId
             ? {
                 ...msg,
-                content: "I'm having trouble connecting to the backend right now. Please check your connection and try again.",
+                content: "Sorry, Fix-ish is calibrating right now — please try again in a moment.",
                 isStreaming: false,
               }
             : msg
