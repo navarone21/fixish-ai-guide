@@ -119,7 +119,7 @@ const ChatContent = () => {
           },
           body: JSON.stringify({
             message: "Hello Fix-ish",
-            session_id: "test_session"
+            sessionId: "test_session"
           }),
         });
 
@@ -503,7 +503,7 @@ const ChatContent = () => {
       // Prepare simplified JSON payload for n8n webhook
       const payload = {
         message: userMessage.content || "Please analyze this image and provide repair guidance",
-        session_id: currentConversationId,
+        sessionId: currentConversationId,
       };
 
       console.log("Sending to n8n:", payload);
