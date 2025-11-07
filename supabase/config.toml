@@ -1,5 +1,8 @@
 project_id = "heupadftmypiolkatzkg"
 
+[functions.fix-ish-chat]
+verify_jwt = false
+
 [functions.n8n_bridge]
 verify_jwt = false
 

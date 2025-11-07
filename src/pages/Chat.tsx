@@ -481,12 +481,18 @@ const ChatContent = () => {
       // Clear selected mode after sending
       setSelectedMode(null);
 
-      // Call n8n webhook directly
-      const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook-test/fixish-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // Call Lovable AI edge function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ish-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       console.log("Response status:", response.status);
       console.log("Response headers:", Object.fromEntries(response.headers.entries()));
@@ -494,14 +500,14 @@ const ChatContent = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Error response:", errorText);
-        throw new Error(`Failed to communicate with backend: ${response.status}`);
+        throw new Error(`Failed to communicate with AI: ${response.status}`);
       }
 
       const responseText = await response.text();
       console.log("Response text:", responseText);
 
       if (!responseText) {
-        throw new Error("n8n workflow returned empty response. Make sure you have a 'Respond to Webhook' node that returns { reply: 'AI response' }");
+        throw new Error("AI service returned empty response");
       }
 
       const functionData = JSON.parse(responseText);
