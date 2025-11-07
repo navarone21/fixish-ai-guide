@@ -15,10 +15,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import testimonialJordan from "@/assets/testimonial-jordan.jpg";
 import testimonialTaylor from "@/assets/testimonial-taylor.jpg";
 import testimonialSam from "@/assets/testimonial-sam.jpg";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { useMainTheme } from "@/contexts/MainThemeContext";
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { theme } = useMainTheme();
+  const isDarkMode = theme === "dark";
   const [formData, setFormData] = useState<FeedbackFormData>({
     feedbackType: "",
     name: "",
@@ -728,7 +732,13 @@ const Index = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Message</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium">Message</label>
+                  <VoiceRecorder
+                    onTranscript={(text) => setFormData(prev => ({ ...prev, message: (prev.message ? prev.message + " " : "") + text }))}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
                 <Textarea
                   value={formData.message}
                   onChange={(e) => updateField("message", e.target.value)}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 
 interface FeedbackRatingProps {
   messageId: string;
@@ -114,6 +115,13 @@ export const FeedbackRating = ({ messageId, sessionId, isDarkMode }: FeedbackRat
           animate={{ opacity: 1, height: "auto" }}
           className="space-y-2"
         >
+          <div className="flex items-center justify-between">
+            <span className="text-xs opacity-70">Optional comment</span>
+            <VoiceRecorder
+              onTranscript={(text) => setFeedbackText((prev) => (prev ? prev + " " : "") + text)}
+              isDarkMode={isDarkMode}
+            />
+          </div>
           <Textarea
             placeholder="Was this helpful? (optional)"
             value={feedbackText}
