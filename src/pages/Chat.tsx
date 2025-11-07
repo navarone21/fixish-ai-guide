@@ -108,6 +108,33 @@ const ChatContent = () => {
     }
   }, []);
 
+  // Test connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await fetch("https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: "Hello Fix-ish",
+            session_id: "test_session"
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Connected to Fix-ish AI successfully.", data);
+        }
+      } catch (error) {
+        console.error("Connection test failed:", error);
+      }
+    };
+
+    testConnection();
+  }, []);
+
   // Update conversation when messages change
   useEffect(() => {
     if (currentConversationId && messages.length > 1) {
@@ -470,23 +497,18 @@ const ChatContent = () => {
         }
       }
 
-      // Configure your n8n webhook URL here
-      // Replace with your actual n8n webhook URL
+      // n8n webhook URL
       const N8N_WEBHOOK_URL = "https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai";
 
-      // Prepare JSON payload for n8n webhook
+      // Prepare simplified JSON payload for n8n webhook
       const payload = {
-        message: userMessage.content || (fileData?.type.startsWith('image/') ? "Please analyze this image and provide repair guidance" : "Uploaded file"),
-        session_id: currentConversationId, // Use conversation ID as session
-        user_id: getUserId(),
-        ...(fileData && { file: fileData }),
-        ...(analysisMode && { mode: analysisMode }),
+        message: userMessage.content || "Please analyze this image and provide repair guidance",
+        session_id: currentConversationId,
       };
 
-      // Clear selected mode after sending
-      setSelectedMode(null);
+      console.log("Sending to n8n:", payload);
 
-      // Call n8n webhook directly
+      // Call n8n webhook
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: {
@@ -495,46 +517,28 @@ const ChatContent = () => {
         body: JSON.stringify(payload),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(`Failed to communicate with AI: ${response.status}`);
+        throw new Error(`Backend returned ${response.status}`);
       }
 
-      const responseText = await response.text();
-      console.log("Response text:", responseText);
+      const data = await response.json();
+      console.log("n8n response:", data);
 
-      if (!responseText) {
-        throw new Error("AI service returned empty response");
+      // Update session ID if backend provides one
+      if (data.sessionId) {
+        setCurrentConversationId(data.sessionId);
       }
 
-      const functionData = JSON.parse(responseText);
-
-      // Handle n8n webhook response (expecting "reply" field)
-      if (functionData && typeof functionData === 'object' && ('reply' in functionData || 'response' in functionData || 'message' in functionData)) {
-        const responseText = functionData.reply || functionData.response || functionData.message || "I'm here to help! Could you provide more details?";
-        
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, content: responseText, isStreaming: false }
-              : msg
-          )
-        );
-      } else if (typeof functionData === 'string') {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, content: functionData, isStreaming: false }
-              : msg
-          )
-        );
-      } else {
-        throw new Error("Unexpected response format from backend");
-      }
+      // Extract reply from response
+      const replyText = data.reply || "I'm here to help! Could you provide more details?";
+      
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, content: replyText, isStreaming: false }
+            : msg
+        )
+      );
     } catch (error) {
       console.error("Chat error:", error);
       
