@@ -470,10 +470,15 @@ const ChatContent = () => {
         }
       }
 
-      // Prepare JSON payload
+      // Configure your n8n webhook URL here
+      // Replace with your actual n8n webhook URL
+      const N8N_WEBHOOK_URL = "https://navaroneturnerviii.app.n8n.cloud/webhook/fixish-ai";
+
+      // Prepare JSON payload for n8n webhook
       const payload = {
         message: userMessage.content || (fileData?.type.startsWith('image/') ? "Please analyze this image and provide repair guidance" : "Uploaded file"),
-        userId: getUserId(),
+        session_id: currentConversationId, // Use conversation ID as session
+        user_id: getUserId(),
         ...(fileData && { file: fileData }),
         ...(analysisMode && { mode: analysisMode }),
       };
@@ -481,18 +486,14 @@ const ChatContent = () => {
       // Clear selected mode after sending
       setSelectedMode(null);
 
-      // Call Fix-ISH AI bridge (routes to your production n8n workflow)
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n_bridge`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      // Call n8n webhook directly
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       console.log("Response status:", response.status);
       console.log("Response headers:", Object.fromEntries(response.headers.entries()));
@@ -512,9 +513,9 @@ const ChatContent = () => {
 
       const functionData = JSON.parse(responseText);
 
-      // Check if response is streaming
-      if (functionData && typeof functionData === 'object' && ('response' in functionData || 'reply' in functionData || 'message' in functionData)) {
-        const responseText = functionData.response || functionData.reply || functionData.message || "I'm here to help! Could you provide more details?";
+      // Handle n8n webhook response (expecting "reply" field)
+      if (functionData && typeof functionData === 'object' && ('reply' in functionData || 'response' in functionData || 'message' in functionData)) {
+        const responseText = functionData.reply || functionData.response || functionData.message || "I'm here to help! Could you provide more details?";
         
         setMessages((prev) =>
           prev.map((msg) =>
@@ -542,7 +543,7 @@ const ChatContent = () => {
       toast({
         title: "Connection Error",
         description: errorMessage.includes("Failed to fetch") 
-          ? "Unable to reach the backend. Check your network connection." 
+          ? "Unable to reach the n8n backend. Check your network connection or webhook URL." 
           : errorMessage,
         variant: "destructive",
       });
