@@ -95,7 +95,7 @@ serve(async (req) => {
     console.log("Successfully generated response");
 
     return new Response(
-      JSON.stringify({ reply }),
+      JSON.stringify({ response: reply }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
