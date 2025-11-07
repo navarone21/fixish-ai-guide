@@ -481,9 +481,9 @@ const ChatContent = () => {
       // Clear selected mode after sending
       setSelectedMode(null);
 
-      // Call Lovable AI edge function
+      // Call Fix-ISH AI bridge (routes to your production n8n workflow)
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-ish-chat`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/n8n_bridge`,
         {
           method: "POST",
           headers: {
@@ -513,8 +513,8 @@ const ChatContent = () => {
       const functionData = JSON.parse(responseText);
 
       // Check if response is streaming
-      if (functionData && typeof functionData === 'object' && 'response' in functionData) {
-        const responseText = functionData.response || functionData.message || "I'm here to help! Could you provide more details?";
+      if (functionData && typeof functionData === 'object' && ('response' in functionData || 'reply' in functionData || 'message' in functionData)) {
+        const responseText = functionData.response || functionData.reply || functionData.message || "I'm here to help! Could you provide more details?";
         
         setMessages((prev) =>
           prev.map((msg) =>

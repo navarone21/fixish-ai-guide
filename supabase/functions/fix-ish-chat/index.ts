@@ -35,19 +35,20 @@ serve(async (req) => {
     const messages = [
       {
         role: "system",
-        content: "You are Fix-ISH AI — an advanced multimodal repair assistant that gives direct, step-by-step answers with no filler."
+        content: "You are Fix-ISH AI — a domain-specific, image-driven repair assistant. Analyze visual damage (e.g., vehicle impact, surface deformation, part failures), identify components involved, list tools/materials, call out safety risks, and provide a concise step-by-step repair plan with clear decisions. Be direct, no filler."
       },
       {
         role: "user",
-        content: message || "Analyze this image"
+        content: message || "Analyze this image for repair guidance"
       }
     ];
 
-    // Add image if provided
-    if (file?.url) {
+    // Add image if provided (supports base64 data URL or direct URL)
+    const imageUrl = file?.url || file?.data;
+    if (imageUrl) {
       messages[1].content = [
         { type: "text", text: message || "Analyze this image" },
-        { type: "image_url", image_url: { url: file.url } }
+        { type: "image_url", image_url: { url: imageUrl } }
       ];
     }
 
@@ -95,7 +96,7 @@ serve(async (req) => {
     console.log("Successfully generated response");
 
     return new Response(
-      JSON.stringify({ response: reply }),
+      JSON.stringify({ response: reply, reply }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
