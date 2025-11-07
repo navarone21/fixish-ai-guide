@@ -106,27 +106,100 @@ Remember: You're not just fixing things - you're teaching users to become better
     }
 
     // Check if response is streaming or JSON
-    const contentType = n8nResponse.headers.get("content-type");
-    
-    if (contentType?.includes("text/event-stream") || contentType?.includes("text/plain")) {
-      console.log('Streaming response from n8n');
-      // Stream the response directly
-      return new Response(n8nResponse.body, {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
-    } else {
-      // Parse and return JSON response
-      const data = await n8nResponse.json();
-      console.log('JSON response from n8n received');
-      
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const contentType = n8nResponse.headers.get("content-type") || "";
+
+    try {
+      const isSSE = contentType.includes("text/event-stream");
+      const isText = contentType.includes("text/plain");
+
+      if (isSSE || isText) {
+        console.log('Non-JSON upstream (SSE/text), buffering and normalizing to JSON');
+        const raw = await n8nResponse.text();
+        let combined = "";
+        for (let rawLine of raw.split("\n")) {
+          let line = rawLine.trim();
+          if (!line) continue;
+          if (line.startsWith("data:")) {
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(payload);
+              const c = parsed.choices?.[0]?.delta?.content
+                ?? parsed.choices?.[0]?.message?.content
+                ?? parsed.content
+                ?? parsed.text;
+              if (c) combined += c;
+            } catch {
+              combined += payload + "\n";
+            }
+          }
+        }
+        if (!combined.trim()) combined = raw.trim();
+        return new Response(
+          JSON.stringify({ response: combined, reply: combined }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // JSON or unknown content-type: try JSON first, then fallback to text normalization
+      let data: any = null;
+      try {
+        data = await n8nResponse.clone().json();
+      } catch {
+        const raw = await n8nResponse.text();
+        if (raw) {
+          let combined = "";
+          for (let rawLine of raw.split("\n")) {
+            let line = rawLine.trim();
+            if (!line) continue;
+            if (line.startsWith("data:")) {
+              const payload = line.slice(5).trim();
+              if (payload === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(payload);
+                const c = parsed.choices?.[0]?.delta?.content
+                  ?? parsed.choices?.[0]?.message?.content
+                  ?? parsed.content
+                  ?? parsed.text;
+                if (c) combined += c;
+              } catch {
+                combined += payload + "\n";
+              }
+            }
+          }
+          const textOut = combined.trim() || raw.trim() || "";
+          return new Response(
+            JSON.stringify({ response: textOut, reply: textOut }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({ response: "", reply: "", error: "Empty response from upstream" }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      const textOut = data?.response ?? data?.reply ?? data?.message ?? data?.text ?? data?.content ?? (typeof data === 'string' ? data : "");
+      if (textOut) {
+        return new Response(
+          JSON.stringify({ response: textOut, reply: textOut }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Fallback: echo upstream object as JSON string to maintain shape
+      return new Response(
+        JSON.stringify({ response: JSON.stringify(data), reply: JSON.stringify(data) }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (e) {
+      console.error('n8n response handling error:', e);
+      const raw = await n8nResponse.text().catch(() => "");
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse upstream response', details: e instanceof Error ? e.message : String(e), upstream: raw?.slice(0, 2000) }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
   } catch (error) {
