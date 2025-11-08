@@ -119,6 +119,7 @@ const ChatContent = () => {
           },
           body: JSON.stringify({
             messages: [
+              { role: "system", content: "You are Fix-ISH, an intelligent, empathetic repair AI that gives clear step-by-step guidance." },
               { role: "user", content: "Hello Fix-ish" }
             ]
           }),
@@ -501,11 +502,23 @@ const ChatContent = () => {
       // Fix-ISH AI Cloudflare Worker backend
       const FIXISH_AI_URL = "https://fixly-ai-proxy.navaroneturner035.workers.dev";
 
-      // Prepare JSON payload for Fix-ISH AI
+      // Build full conversation history for context
+      const conversationMessages = [
+        { role: "system", content: "You are Fix-ISH, an intelligent, empathetic repair AI that gives clear step-by-step guidance." },
+        // Include all previous messages (excluding the welcome message and the streaming placeholder)
+        ...messages
+          .filter(m => m.id !== "welcome" && m.id !== aiMessageId)
+          .map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+        // Add the new user message
+        { role: "user", content: userMessage.content || "Please analyze this image and provide repair guidance" }
+      ];
+
+      // Prepare JSON payload for Fix-ISH AI with full context
       const payload = {
-        messages: [
-          { role: "user", content: userMessage.content || "Please analyze this image and provide repair guidance" }
-        ]
+        messages: conversationMessages
       };
 
       console.log("Sending to Fix-ISH AI:", payload);
