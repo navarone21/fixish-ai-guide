@@ -112,19 +112,21 @@ const ChatContent = () => {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch("https://fix-ish.navaroneturner035.workers.dev", {
+        const response = await fetch("https://fixly-ai-proxy.navaroneturner035.workers.dev", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: "Hello Fix-ish"
+            messages: [
+              { role: "user", content: "Hello Fix-ish" }
+            ]
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Connected to Fix-ish AI successfully.", data);
+          console.log("✅ Connected to Fix-ISH AI successfully.", data);
         }
       } catch (error) {
         console.error("Connection test failed:", error);
@@ -496,17 +498,19 @@ const ChatContent = () => {
         }
       }
 
-      // Fix-ish AI Cloudflare Worker backend
-      const FIXISH_AI_URL = "https://fix-ish.navaroneturner035.workers.dev";
+      // Fix-ISH AI Cloudflare Worker backend
+      const FIXISH_AI_URL = "https://fixly-ai-proxy.navaroneturner035.workers.dev";
 
-      // Prepare JSON payload for Fix-ish AI
+      // Prepare JSON payload for Fix-ISH AI
       const payload = {
-        message: userMessage.content || "Please analyze this image and provide repair guidance",
+        messages: [
+          { role: "user", content: userMessage.content || "Please analyze this image and provide repair guidance" }
+        ]
       };
 
-      console.log("Sending to Fix-ish AI:", payload);
+      console.log("Sending to Fix-ISH AI:", payload);
 
-      // Call Fix-ish AI backend
+      // Call Fix-ISH AI backend
       const response = await fetch(FIXISH_AI_URL, {
         method: "POST",
         headers: {
@@ -516,22 +520,17 @@ const ChatContent = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Fix-ish AI backend returned ${response.status}`);
+        throw new Error(`Fix-ISH AI backend returned ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Fix-ish AI response:", data);
+      console.log("Fix-ISH AI response:", data);
 
       // Extract reply from backend response
-      // Expected format: output[1].content[0].text
-      let replyText = "Sorry, Fix-ish is calibrating right now — please try again in a moment.";
+      let replyText = "Sorry, Fix-ISH is calibrating right now — please try again in a moment.";
       
-      try {
-        if (data?.output?.[1]?.content?.[0]?.text) {
-          replyText = data.output[1].content[0].text;
-        }
-      } catch (e) {
-        console.error("Error extracting response:", e);
+      if (data?.reply) {
+        replyText = data.reply;
       }
       
       setMessages((prev) =>
@@ -549,7 +548,7 @@ const ChatContent = () => {
       toast({
         title: "Connection Error",
         description: errorMessage.includes("Failed to fetch") 
-          ? "Unable to reach Fix-ish AI backend. Check your network connection." 
+          ? "Unable to reach Fix-ISH AI backend. Check your network connection." 
           : errorMessage,
         variant: "destructive",
       });
@@ -559,7 +558,7 @@ const ChatContent = () => {
           msg.id === aiMessageId
             ? {
                 ...msg,
-                content: "Sorry, Fix-ish is calibrating right now — please try again in a moment.",
+                content: "Sorry, Fix-ISH is calibrating right now — please try again in a moment.",
                 isStreaming: false,
               }
             : msg
