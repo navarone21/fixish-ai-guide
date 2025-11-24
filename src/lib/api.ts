@@ -6,8 +6,7 @@ export async function sendChat(message: string): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message }),
   });
-  const data = await res.json();
-  return data.reply;
+  return (await res.json()).reply;
 }
 
 export async function getRepairSteps(issue: string): Promise<string[]> {
@@ -16,32 +15,25 @@ export async function getRepairSteps(issue: string): Promise<string[]> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ issue }),
   });
-  const data = await res.json();
-  return data.steps;
+  return (await res.json()).steps;
 }
 
 export async function analyzeImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
-
   const res = await fetch(`${API_BASE}/analyze-image`, {
     method: "POST",
     body: form,
   });
-
-  const data = await res.json();
-  return data.analysis;
+  return (await res.json()).analysis;
 }
 
 export async function analyzeVideo(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
-
   const res = await fetch(`${API_BASE}/analyze-video`, {
     method: "POST",
     body: form,
   });
-
-  const data = await res.json();
-  return data.analysis;
+  return (await res.json()).analysis;
 }
