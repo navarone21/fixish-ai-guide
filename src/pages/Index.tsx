@@ -195,7 +195,16 @@ const Index = () => {
             >
               <Button 
                 size="lg"
-                onClick={() => navigate("/chat")}
+                onClick={async () => {
+                  navigate("/chat");
+                  // Trigger welcome message when navigating
+                  try {
+                    const { sendChat } = await import("@/lib/api");
+                    await sendChat("Hello Fix-ISH");
+                  } catch (error) {
+                    console.error("Initial connection error:", error);
+                  }
+                }}
                 className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)] relative overflow-hidden"
               >
                 {/* Spark effect on hover */}

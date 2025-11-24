@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle, Headphones, History } from "lucide-react";
+import { Send, Upload, Sun, Moon, Trash2, ArrowLeft, Paperclip, X, Mic, Share2, Copy, RotateCcw, Edit, Trash, Wrench, Settings, BookOpen, Puzzle, Headphones, History, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { EnhancedContentRenderer } from "@/components/EnhancedContentRenderer";
 import { RepairGuideViewer } from "@/components/RepairGuideViewer";
 import { RepairHistoryDrawer } from "@/components/RepairHistoryDrawer";
 import { supabase } from "@/integrations/supabase/client";
+import { sendChat, analyzeImage, analyzeVideo } from "@/lib/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,6 +92,7 @@ const ChatContent = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -108,27 +110,12 @@ const ChatContent = () => {
     }
   }, []);
 
-  // Test connection on mount
+  // Test backend connection on mount
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch("https://fixly-ai-proxy.navaroneturner035.workers.dev", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: "You are Fix-ISH, an intelligent, empathetic repair AI that gives clear step-by-step guidance." },
-              { role: "user", content: "Hello Fix-ish" }
-            ]
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("✅ Connected to Fix-ISH AI successfully.", data);
-        }
+        const reply = await sendChat("Hello Fix-ISH");
+        console.log("✅ Connected to Fix-ISH AI successfully:", reply);
       } catch (error) {
         console.error("Connection test failed:", error);
       }
@@ -362,6 +349,17 @@ const ChatContent = () => {
     });
   };
 
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setUploadedFiles(files);
+      toast({
+        title: "Video uploaded",
+        description: `${files[0].name} ready to analyze`,
+      });
+    }
+  };
+
   const voices = [
     { id: "alloy", name: "Alloy" },
     { id: "echo", name: "Echo" },
@@ -480,70 +478,24 @@ const ChatContent = () => {
     setMessages((prev) => [...prev, aiMessage]);
 
     try {
-      // Convert files to base64 if present
-      let fileData = null;
-      let analysisMode = selectedMode;
+      let replyText = "";
+
+      // Handle file uploads (image or video analysis)
       if (filesToSend.length > 0) {
-        const file = filesToSend[0]; // Send first file
-        const base64 = await fileToBase64(file);
-        fileData = {
-          name: file.name,
-          type: file.type,
-          data: base64,
-          size: file.size,
-        };
+        const file = filesToSend[0];
         
-        // Auto-detect repair analysis mode for images
-        if (file.type.startsWith('image/') && !analysisMode) {
-          analysisMode = 'repair_analysis';
+        if (file.type.startsWith('image/')) {
+          // Analyze image
+          replyText = await analyzeImage(file);
+        } else if (file.type.startsWith('video/')) {
+          // Analyze video
+          replyText = await analyzeVideo(file);
+        } else {
+          throw new Error("Unsupported file type. Please upload an image or video.");
         }
-      }
-
-      // Fix-ISH AI Cloudflare Worker backend
-      const FIXISH_AI_URL = "https://fixly-ai-proxy.navaroneturner035.workers.dev";
-
-      // Build full conversation history for context
-      const conversationMessages = [
-        { role: "system", content: "You are Fix-ISH, an intelligent, empathetic repair AI that gives clear step-by-step guidance." },
-        // Include all previous messages (excluding the welcome message and the streaming placeholder)
-        ...messages
-          .filter(m => m.id !== "welcome" && m.id !== aiMessageId)
-          .map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-        // Add the new user message
-        { role: "user", content: userMessage.content || "Please analyze this image and provide repair guidance" }
-      ];
-
-      // Prepare JSON payload for Fix-ISH AI with full context
-      const payload = {
-        messages: conversationMessages
-      };
-
-      console.log("Sending to Fix-ISH AI:", payload);
-
-      // Call Fix-ISH AI backend
-      const response = await fetch(FIXISH_AI_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Fix-ISH AI backend returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Fix-ISH AI response:", data);
-
-      // Extract reply from backend response
-      let replyText = "Sorry, Fix-ISH is calibrating right now — please try again in a moment.";
-      
-      if (data?.reply) {
-        replyText = data.reply;
+      } else {
+        // Regular chat message
+        replyText = await sendChat(userMessage.content);
       }
       
       setMessages((prev) =>
@@ -1116,24 +1068,47 @@ const ChatContent = () => {
           )}
 
           <div className="flex gap-2 items-end">
+            {/* Image Upload Input */}
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx"
+              accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx"
               onChange={handleFileSelect}
               className="hidden"
             />
             
+            {/* Video Upload Input */}
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
+            
+            {/* Image Upload Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
-              title="Upload file"
+              title="Upload image"
             >
-            <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
+              <Paperclip className="w-5 h-5" style={{ color: "#00C2B2" }} />
+            </Button>
+
+            {/* Video Upload Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={isLoading}
+              className="hover:bg-primary/10 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,194,178,0.4)]"
+              title="Upload video"
+            >
+              <Video className="w-5 h-5" style={{ color: "#00C2B2" }} />
             </Button>
 
             <VoiceRecorder
