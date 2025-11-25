@@ -155,15 +155,6 @@ const Index = () => {
           </div>
 
           <motion.p
-            className="text-base md:text-lg text-slate-600 font-extralight tracking-wide mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.8 }}
-          >
-            by Lavern Williams
-          </motion.p>
-
-          <motion.p
             className="text-2xl md:text-3xl mb-4 font-medium text-slate-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
