@@ -78,6 +78,7 @@ export interface SafetyResponse {
 
 export interface FixishFlowResponse {
   flow: any;
+  overlays?: any[];
 }
 
 export interface QuickDiagnoseResponse {
