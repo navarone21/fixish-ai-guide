@@ -4,6 +4,7 @@ import { EnhancedChatMessage } from "@/components/EnhancedChatMessage";
 import { EnhancedChatInput } from "@/components/EnhancedChatInput";
 import { RepairTemplates } from "@/components/RepairTemplates";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
+import { OverlayCanvas } from "@/components/OverlayCanvas";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Home, Wrench, Menu, X, Zap } from "lucide-react";
@@ -18,6 +19,10 @@ interface Message {
   results?: {
     type: 'detection' | 'analysis' | 'steps' | 'tools' | 'safety' | 'flow' | 'diagnose';
     data: any;
+  };
+  overlayData?: {
+    baseImage: string;
+    overlays: any[];
   };
 }
 
@@ -81,44 +86,57 @@ export default function ChatPage() {
     setIsTyping(true);
     setUploadProgress(10);
 
-    try {
-      // Run full Fix-ISH flow for comprehensive analysis
-      const { runFixishFlow } = await import("@/lib/api");
-      setUploadProgress(50);
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Image = reader.result as string;
       
-      const flowData = await runFixishFlow(file);
-      setUploadProgress(90);
-      
-      setTimeout(() => {
-        addMessage(
-          "assistant", 
-          "I've completed a comprehensive analysis of your image. Here's what I found:",
-          { type: 'flow', data: flowData }
-        );
-        setIsTyping(false);
-        setUploadProgress(0);
-      }, 800);
-    } catch (error) {
-      // Fallback to basic image analysis
       try {
-        const { analyzeImage } = await import("@/lib/api");
-        const response = await analyzeImage(file);
+        // Run full Fix-ISH flow for comprehensive analysis
+        const { runFixishFlow } = await import("@/lib/api");
+        setUploadProgress(50);
+        
+        const flowData = await runFixishFlow(file);
+        setUploadProgress(90);
         
         setTimeout(() => {
-          addMessage("assistant", response.analysis);
+          const newMessage: Message = {
+            role: "assistant",
+            content: "I've completed a comprehensive analysis of your image. Here's what I found:",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            results: { type: 'flow', data: flowData },
+            overlayData: flowData.overlays ? {
+              baseImage: base64Image,
+              overlays: flowData.overlays
+            } : undefined
+          };
+          setMessages((prev) => [...prev, newMessage]);
           setIsTyping(false);
           setUploadProgress(0);
         }, 800);
-      } catch (fallbackError) {
-        toast({
-          title: "Analysis Failed",
-          description: "Could not analyze the image. Please try again.",
-          variant: "destructive",
-        });
-        setIsTyping(false);
-        setUploadProgress(0);
+      } catch (error) {
+        // Fallback to basic image analysis
+        try {
+          const { analyzeImage } = await import("@/lib/api");
+          const response = await analyzeImage(file);
+          
+          setTimeout(() => {
+            addMessage("assistant", response.analysis);
+            setIsTyping(false);
+            setUploadProgress(0);
+          }, 800);
+        } catch (fallbackError) {
+          toast({
+            title: "Analysis Failed",
+            description: "Could not analyze the image. Please try again.",
+            variant: "destructive",
+          });
+          setIsTyping(false);
+          setUploadProgress(0);
+        }
       }
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleVideoUpload = async (file: File) => {
@@ -306,6 +324,21 @@ export default function ChatPage() {
                       content={message.content}
                       timestamp={message.timestamp}
                     />
+                    
+                    {/* Overlay Canvas */}
+                    {message.overlayData && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mt-4 ml-12"
+                      >
+                        <OverlayCanvas 
+                          baseImage={message.overlayData.baseImage}
+                          overlays={message.overlayData.overlays}
+                        />
+                      </motion.div>
+                    )}
                     
                     {/* Results Display */}
                     {message.results && (
