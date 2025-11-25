@@ -7,8 +7,7 @@ import { ImageGalleryBlock } from "./ImageGalleryBlock";
 
 interface EnhancedContentRendererProps {
   content: string;
-  isDarkMode: boolean;
-  onTermClick: (term: string) => void;
+  isAssistant: boolean;
 }
 
 interface ContentBlock {
@@ -22,19 +21,17 @@ interface ContentBlock {
 
 export const EnhancedContentRenderer = ({
   content,
-  isDarkMode,
-  onTermClick,
+  isAssistant,
 }: EnhancedContentRendererProps) => {
   const blocks = parseContent(content);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 text-sm leading-relaxed">
       {blocks.map((block, index) => (
         <ContentBlock
           key={index}
           block={block}
-          isDarkMode={isDarkMode}
-          onTermClick={onTermClick}
+          isAssistant={isAssistant}
         />
       ))}
     </div>
@@ -224,13 +221,12 @@ function parseContent(content: string): ContentBlock[] {
 
 function ContentBlock({
   block,
-  isDarkMode,
-  onTermClick,
+  isAssistant,
 }: {
   block: ContentBlock;
-  isDarkMode: boolean;
-  onTermClick: (term: string) => void;
+  isAssistant: boolean;
 }) {
+  const isDarkMode = document.documentElement.classList.contains('dark');
   switch (block.type) {
     case "gallery":
       return <ImageGalleryBlock images={block.images!} isDarkMode={isDarkMode} />;
@@ -248,7 +244,7 @@ function ContentBlock({
     default:
       return (
         <div className="whitespace-pre-wrap">
-          <ParsedMessage content={block.content} isDarkMode={isDarkMode} onTermClick={onTermClick} />
+          {block.content}
         </div>
       );
   }
