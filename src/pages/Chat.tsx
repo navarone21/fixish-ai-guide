@@ -17,6 +17,7 @@ import { RepairGuideViewer } from "@/components/RepairGuideViewer";
 import { RepairHistoryDrawer } from "@/components/RepairHistoryDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { sendChat, analyzeImage, analyzeVideo } from "@/lib/api";
+import OverlayCanvas from "@/components/OverlayCanvas";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo-minimal.png";
 
+interface Detection {
+  label: string;
+  confidence: number;
+  box: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  };
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -32,6 +44,8 @@ interface Message {
   timestamp: Date;
   files?: UploadedFile[];
   isStreaming?: boolean;
+  detections?: Detection[];
+  analysisImage?: string;
 }
 
 interface Conversation {
@@ -479,6 +493,8 @@ const ChatContent = () => {
 
     try {
       let replyText = "";
+      let detections: Detection[] | undefined;
+      let analysisImage: string | undefined;
 
       // Handle file uploads (image or video analysis)
       if (filesToSend.length > 0) {
@@ -486,7 +502,20 @@ const ChatContent = () => {
         
         if (file.type.startsWith('image/')) {
           // Analyze image
-          replyText = await analyzeImage(file);
+          const analysisResult = await analyzeImage(file);
+          
+          // Try to parse JSON response for detection data
+          try {
+            const parsed = JSON.parse(analysisResult);
+            replyText = parsed.analysis || parsed.reply || analysisResult;
+            detections = parsed.detections;
+            if (detections && detections.length > 0) {
+              analysisImage = URL.createObjectURL(file);
+            }
+          } catch {
+            // If not JSON, use as plain text
+            replyText = analysisResult;
+          }
         } else if (file.type.startsWith('video/')) {
           // Analyze video
           replyText = await analyzeVideo(file);
@@ -501,7 +530,13 @@ const ChatContent = () => {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === aiMessageId
-            ? { ...msg, content: replyText, isStreaming: false }
+            ? { 
+                ...msg, 
+                content: replyText, 
+                isStreaming: false,
+                detections,
+                analysisImage
+              }
             : msg
         )
       );
@@ -754,6 +789,16 @@ const ChatContent = () => {
                         </div>
                       )}
                       
+                      {/* Detection Overlay Canvas */}
+                      {message.role === "assistant" && message.analysisImage && message.detections && (
+                        <div className="mb-4">
+                          <OverlayCanvas 
+                            imageSrc={message.analysisImage}
+                            detections={message.detections}
+                          />
+                        </div>
+                      )}
+
                       {message.content && (
                         <div className="text-sm md:text-base leading-relaxed">
                           {message.role === "assistant" ? (
