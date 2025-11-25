@@ -113,10 +113,10 @@ const Index = () => {
           transition={{ duration: 1.2, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          {/* FIX-ISH with scanning light */}
+          {/* Fix-ISH with scanning light */}
           <div className="mb-3 relative">
             <div className="relative inline-block">
-              {['F', 'I', 'X', '-', 'I', 'S', 'H'].map((letter, index) => (
+              {['F', 'i', 'x', '-', 'I', 'S', 'H'].map((letter, index) => (
                 <motion.span
                   key={index}
                   initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
