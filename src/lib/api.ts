@@ -1,9 +1,9 @@
-const API_BASE = "https://gnu-considerations-comic-cheap.trycloudflare.com/api";
+export const BASE_URL = "https://operations-english-relates-invited.trycloudflare.com/api";
 
 export async function detectImage(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/detect`, {
+  const res = await fetch(`${BASE_URL}/detect`, {
     method: "POST",
     body: form,
   });
@@ -14,7 +14,7 @@ export async function detectImage(file: File) {
 export async function analyzeParts(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/analyze-parts`, {
+  const res = await fetch(`${BASE_URL}/analyze-parts`, {
     method: "POST",
     body: form,
   });
@@ -23,7 +23,7 @@ export async function analyzeParts(file: File) {
 }
 
 export async function getRepairSteps(issue: string) {
-  const res = await fetch(`${API_BASE}/steps`, {
+  const res = await fetch(`${BASE_URL}/steps`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ issue }),
@@ -35,7 +35,7 @@ export async function getRepairSteps(issue: string) {
 export async function getRepairStepsFromImage(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/steps`, {
+  const res = await fetch(`${BASE_URL}/steps`, {
     method: "POST",
     body: form,
   });
@@ -46,7 +46,7 @@ export async function getRepairStepsFromImage(file: File) {
 export async function getVideoSteps(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/video-steps`, {
+  const res = await fetch(`${BASE_URL}/video-steps`, {
     method: "POST",
     body: form,
   });
@@ -55,7 +55,7 @@ export async function getVideoSteps(file: File) {
 }
 
 export async function extractTools(issue: string) {
-  const res = await fetch(`${API_BASE}/tools`, {
+  const res = await fetch(`${BASE_URL}/tools`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ issue }),
@@ -67,7 +67,7 @@ export async function extractTools(issue: string) {
 export async function extractToolsFromImage(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/tools`, {
+  const res = await fetch(`${BASE_URL}/tools`, {
     method: "POST",
     body: form,
   });
@@ -76,7 +76,7 @@ export async function extractToolsFromImage(file: File) {
 }
 
 export async function getSafetyWarnings(issue: string) {
-  const res = await fetch(`${API_BASE}/safety`, {
+  const res = await fetch(`${BASE_URL}/safety`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ issue }),
@@ -89,7 +89,7 @@ export async function runFixishFlow(file: File, issue?: string) {
   const form = new FormData();
   form.append("file", file);
   if (issue) form.append("issue", issue);
-  const res = await fetch(`${API_BASE}/fixish-flow`, {
+  const res = await fetch(`${BASE_URL}/fixish-flow`, {
     method: "POST",
     body: form,
   });
@@ -100,7 +100,7 @@ export async function runFixishFlow(file: File, issue?: string) {
 export async function quickDiagnose(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/quick-diagnose`, {
+  const res = await fetch(`${BASE_URL}/quick-diagnose`, {
     method: "POST",
     body: form,
   });
@@ -109,7 +109,7 @@ export async function quickDiagnose(file: File) {
 }
 
 export async function sendChat(message: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/chat`, {
+  const res = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message }),
@@ -121,7 +121,7 @@ export async function sendChat(message: string): Promise<string> {
 export async function analyzeImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/analyze-image`, {
+  const res = await fetch(`${BASE_URL}/analyze-image`, {
     method: "POST",
     body: form,
   });
@@ -132,7 +132,7 @@ export async function analyzeImage(file: File): Promise<string> {
 export async function analyzeVideo(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/analyze-video`, {
+  const res = await fetch(`${BASE_URL}/analyze-video`, {
     method: "POST",
     body: form,
   });
