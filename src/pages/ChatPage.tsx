@@ -11,20 +11,20 @@ interface Message {
   timestamp: string;
 }
 
-// Empty placeholder functions for backend connection
+// Connect to actual backend API
 const sendTextToBackend = async (message: string): Promise<string> => {
-  // TODO: Connect to backend
-  return "I'm your AI repair assistant. Please connect me to the backend to start helping you!";
+  const { sendChat } = await import("@/lib/api");
+  return await sendChat(message);
 };
 
 const sendImageToBackend = async (file: File): Promise<string> => {
-  // TODO: Connect to backend
-  return "Image received! Backend connection needed for analysis.";
+  const { analyzeImage } = await import("@/lib/api");
+  return await analyzeImage(file);
 };
 
 const sendVideoToBackend = async (file: File): Promise<string> => {
-  // TODO: Connect to backend
-  return "Video received! Backend connection needed for analysis.";
+  const { analyzeVideo } = await import("@/lib/api");
+  return await analyzeVideo(file);
 };
 
 export default function ChatPage() {
