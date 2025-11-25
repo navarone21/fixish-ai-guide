@@ -148,35 +148,34 @@ export function EnhancedChatInput({
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-sm">
+    <div className="border-t border-border bg-card/95 backdrop-blur-md shadow-lg">
       <div className="max-w-4xl mx-auto p-4">
         <form onSubmit={handleSubmit}>
-          {/* Attached Files Preview */}
           <AnimatePresence>
             {attachedFiles.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-2 flex flex-wrap gap-2"
+                className="mb-3 flex flex-wrap gap-2"
               >
                 {attachedFiles.map((item, index) => (
                   <motion.div
                     key={index}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-1.5 text-sm"
+                    className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-sm shadow-sm"
                   >
-                    {item.type === 'image' && <Image className="w-4 h-4" />}
-                    {item.type === 'video' && <Video className="w-4 h-4" />}
-                    {item.type === 'audio' && <Paperclip className="w-4 h-4" />}
-                    <span className="max-w-[150px] truncate">{item.file.name}</span>
+                    {item.type === 'image' && <Image className="w-4 h-4 text-primary" />}
+                    {item.type === 'video' && <Video className="w-4 h-4 text-primary" />}
+                    {item.type === 'audio' && <Paperclip className="w-4 h-4 text-primary" />}
+                    <span className="max-w-[150px] truncate font-medium">{item.file.name}</span>
                     <button
                       type="button"
                       onClick={() => removeAttachment(index)}
-                      className="hover:text-destructive transition-colors"
+                      className="hover:text-destructive transition-colors ml-1"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </motion.div>
                 ))}
@@ -184,9 +183,8 @@ export function EnhancedChatInput({
             )}
           </AnimatePresence>
 
-          <div className="flex items-end gap-2">
-            {/* File Upload Buttons */}
-            <div className="flex gap-1">
+          <div className="flex items-end gap-3">
+            <div className="flex gap-1.5">
               <input
                 ref={imageInputRef}
                 type="file"
@@ -200,7 +198,7 @@ export function EnhancedChatInput({
                 size="icon"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={disabled}
-                className="hover:bg-primary/10"
+                className="hover:bg-primary/10 hover:text-primary transition-all rounded-lg"
                 title="Upload image"
               >
                 <Image className="w-5 h-5" />
@@ -219,7 +217,7 @@ export function EnhancedChatInput({
                 size="icon"
                 onClick={() => videoInputRef.current?.click()}
                 disabled={disabled}
-                className="hover:bg-primary/10"
+                className="hover:bg-primary/10 hover:text-primary transition-all rounded-lg"
                 title="Upload video"
               >
                 <Video className="w-5 h-5" />
@@ -238,27 +236,28 @@ export function EnhancedChatInput({
                 size="icon"
                 onClick={() => audioInputRef.current?.click()}
                 disabled={disabled}
-                className="hover:bg-primary/10"
+                className="hover:bg-primary/10 hover:text-primary transition-all rounded-lg"
                 title="Upload audio file"
               >
                 <Paperclip className="w-5 h-5" />
               </Button>
 
-              {/* Voice Recording Button */}
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                 disabled={disabled || isProcessing}
-                className={`hover:bg-primary/10 transition-all ${isRecording ? 'bg-red-500/20' : ''}`}
+                className={`hover:bg-primary/10 hover:text-primary transition-all rounded-lg ${
+                  isRecording ? 'bg-destructive/20 text-destructive' : ''
+                }`}
                 title={isRecording ? "Stop recording" : "Voice input"}
               >
                 {isProcessing ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : isRecording ? (
-                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity }}>
-                    <Square className="w-5 h-5 fill-red-500 text-red-500" />
+                  <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+                    <Square className="w-5 h-5 fill-current" />
                   </motion.div>
                 ) : (
                   <Mic className="w-5 h-5" />
@@ -266,13 +265,12 @@ export function EnhancedChatInput({
               </Button>
             </div>
 
-            {/* Message Input */}
             <Textarea
               ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe your repair issue or upload media..."
-              className="min-h-[56px] max-h-[200px] resize-none border-border/50 focus:border-primary/50 bg-secondary/30"
+              className="min-h-[58px] max-h-[200px] resize-none border-border/60 focus:border-primary/50 bg-background/50 rounded-xl shadow-sm"
               disabled={disabled}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -282,11 +280,10 @@ export function EnhancedChatInput({
               }}
             />
 
-            {/* Send Button */}
             <Button
               type="submit"
               size="icon"
-              className="shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90 min-w-[56px] h-[56px]"
+              className="shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90 min-w-[58px] h-[58px] rounded-xl"
               disabled={(!message.trim() && attachedFiles.length === 0) || disabled || isProcessing}
             >
               <Send className="w-5 h-5" />
@@ -294,8 +291,8 @@ export function EnhancedChatInput({
           </div>
         </form>
 
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          Press Enter to send • Shift+Enter for new line • Upload images, videos, or audio files
+        <p className="text-xs text-muted-foreground mt-3 text-center">
+          <span className="font-medium">Enter</span> to send • <span className="font-medium">Shift+Enter</span> for new line • Upload images, videos, or audio
         </p>
       </div>
     </div>

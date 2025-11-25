@@ -97,23 +97,22 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen relative bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen relative bg-background">
       <RepairWorkshopBackground />
       
-      {/* Theme Toggle */}
       <div className="fixed top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
-      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
+          transition={{ duration: 1, ease: "easeOut" }}
           className="relative z-10 container mx-auto px-4 text-center max-w-5xl"
         >
-          {/* Fix-ISH with scanning light */}
           <div className="mb-3 relative">
             <div className="relative inline-block">
               {['F', 'i', 'x', '-', 'I', 'S', 'H'].map((letter, index) => (
@@ -130,15 +129,14 @@ const Index = () => {
                     delay: 0.3 + index * 0.1,
                     ease: [0.6, 0.01, 0.05, 0.95]
                   }}
-                  className="inline-block text-7xl md:text-9xl font-light tracking-tight text-slate-800"
+                  className="inline-block text-7xl md:text-9xl font-light tracking-tight text-foreground"
                 >
                   {letter}
                 </motion.span>
               ))}
               
-              {/* Scanning light effect */}
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent"
                 initial={{ x: '-100%' }}
                 animate={{ x: '200%' }}
                 transition={{
@@ -155,7 +153,7 @@ const Index = () => {
           </div>
 
           <motion.p
-            className="text-2xl md:text-3xl mb-4 font-medium text-slate-700"
+            className="text-2xl md:text-3xl mb-4 font-medium text-foreground/80"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.4, duration: 0.8 }}
@@ -164,7 +162,7 @@ const Index = () => {
           </motion.p>
 
           <motion.p
-            className="text-base md:text-lg text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed"
+            className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.6, duration: 0.8 }}
@@ -188,7 +186,6 @@ const Index = () => {
                 size="lg"
                 onClick={async () => {
                   navigate("/chat");
-                  // Trigger welcome message when navigating
                   try {
                     const { sendChat } = await import("@/lib/api");
                     await sendChat("Hello Fix-ISH");
@@ -196,9 +193,8 @@ const Index = () => {
                     console.error("Initial connection error:", error);
                   }
                 }}
-                className="shadow-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,198,195,0.4)] relative overflow-hidden"
+                className="shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:shadow-2xl relative overflow-hidden group"
               >
-                {/* Spark effect on hover */}
                 <motion.span
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   initial={{ x: '-100%', opacity: 0 }}
@@ -209,19 +205,19 @@ const Index = () => {
                   }}
                 />
                 <span className="relative z-10">Get Started</span>
-                <ArrowRight className="ml-2 relative z-10" />
+                <ArrowRight className="ml-2 relative z-10 group-hover:translate-x-1 transition-transform" />
               </Button>
             </motion.div>
             
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button 
-                variant="minimal" 
+                variant="outline" 
                 size="lg"
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,198,195,0.3)] hover:bg-primary/10 relative overflow-hidden"
+                className="transition-all duration-300 hover:bg-primary/5 border-primary/20 hover:border-primary/40 relative overflow-hidden group"
               >
                 <motion.span
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/30 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                   initial={{ x: '-100%', opacity: 0 }}
                   whileHover={{ 
                     x: '100%',
@@ -238,10 +234,10 @@ const Index = () => {
                 variant="ghost" 
                 size="lg"
                 onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
-                className="transition-all duration-300 hover:bg-slate-100 hover:shadow-[0_0_15px_rgba(0,198,195,0.2)] relative overflow-hidden"
+                className="transition-all duration-300 hover:bg-muted relative overflow-hidden group"
               >
                 <motion.span
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/40 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/40 to-transparent"
                   initial={{ x: '-100%', opacity: 0 }}
                   whileHover={{ 
                     x: '100%',
@@ -256,8 +252,7 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* About Section */}
-      <section className="py-32 px-4 relative z-10 gradient-subtle">
+      <section className="py-32 px-4 relative z-10 bg-gradient-to-b from-transparent to-secondary/10">
         <div className="container mx-auto max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -278,7 +273,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Core Features Section */}
       <section id="features" className="py-32 px-4 relative z-10">
         <div className="container mx-auto max-w-7xl">
           <motion.h2
@@ -300,10 +294,9 @@ const Index = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 whileHover={{ 
                   y: -5,
-                  boxShadow: "0 10px 30px rgba(0, 198, 195, 0.1)",
                   transition: { duration: 0.3 }
                 }}
-                className="bg-card p-8 rounded-xl border border-border transition-all duration-300"
+                className="bg-card p-8 rounded-xl border border-border transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20"
               >
                 <feature.icon className="w-10 h-10 mb-4 text-primary" strokeWidth={1.5} />
                 <h3 className="text-xl font-medium mb-3">{feature.title}</h3>
@@ -314,8 +307,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-32 px-4 relative z-10 gradient-subtle">
+      <section className="py-32 px-4 relative z-10 bg-gradient-to-b from-secondary/10 to-transparent">
         <div className="container mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0 }}
@@ -331,15 +323,13 @@ const Index = () => {
             </p>
           </motion.div>
 
-          {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            {/* Starter Plan */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl transition-all duration-300"
+              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
             >
               <h3 className="text-2xl font-medium mb-2">Starter</h3>
               <div className="mb-6">
@@ -375,13 +365,12 @@ const Index = () => {
               </Button>
             </motion.div>
 
-            {/* Pro Plan */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-card p-8 rounded-xl border-2 border-primary relative hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
+              className="bg-card p-8 rounded-xl border-2 border-primary relative hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300"
             >
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
                 Most Popular
@@ -424,20 +413,19 @@ const Index = () => {
               </Button>
             </motion.div>
 
-            {/* Enterprise Plan */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl transition-all duration-300"
+              className="bg-card p-8 rounded-xl border border-border hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
             >
               <h3 className="text-2xl font-medium mb-2">Enterprise</h3>
               <div className="mb-6">
-                <span className="text-2xl font-light">Contact us</span>
+                <span className="text-4xl font-light">Custom</span>
               </div>
               <p className="text-muted-foreground mb-6">
-                For teams and custom integrations.
+                For teams and organizations.
               </p>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start gap-2">
@@ -446,27 +434,27 @@ const Index = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Custom AI training</span>
+                  <span className="text-sm">Custom integrations</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">API access & integrations</span>
+                  <span className="text-sm">Dedicated support</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Dedicated account manager</span>
+                  <span className="text-sm">Team management</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">SLA & white-label options</span>
+                  <span className="text-sm">SLA guarantee</span>
                 </li>
               </ul>
               <Button 
-                onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
-                className="w-full" 
+                onClick={() => navigate("/chat")}
+                className="w-full"
                 variant="outline"
               >
-                Get Started
+                Contact Sales
               </Button>
             </motion.div>
           </div>
