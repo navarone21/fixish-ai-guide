@@ -63,7 +63,7 @@ export default function ChatPage() {
       const response = await sendChat(message);
       
       setTimeout(() => {
-        addMessage("assistant", response);
+        addMessage("assistant", response.reply);
         setIsTyping(false);
       }, 800);
     } catch (error) {
@@ -105,7 +105,7 @@ export default function ChatPage() {
         const response = await analyzeImage(file);
         
         setTimeout(() => {
-          addMessage("assistant", response);
+          addMessage("assistant", response.analysis);
           setIsTyping(false);
           setUploadProgress(0);
         }, 800);
@@ -149,7 +149,7 @@ export default function ChatPage() {
         const response = await analyzeVideo(file);
         
         setTimeout(() => {
-          addMessage("assistant", response);
+          addMessage("assistant", response.analysis);
           setIsTyping(false);
           setUploadProgress(0);
         }, 1000);
