@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
-import { ChatMessage } from "@/components/ChatMessage";
-import { ChatInput } from "@/components/ChatInput";
-import OverlayCanvas from "@/components/OverlayCanvas";
+import { motion, AnimatePresence } from "framer-motion";
+import { EnhancedChatMessage } from "@/components/EnhancedChatMessage";
+import { EnhancedChatInput } from "@/components/EnhancedChatInput";
+import { RepairTemplates } from "@/components/RepairTemplates";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Home, Wrench, Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import logo from "@/assets/logo-minimal.png";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,17 +32,21 @@ const sendVideoToBackend = async (file: File): Promise<string> => {
   return await analyzeVideo(file);
 };
 
+const sendAudioToBackend = async (file: File): Promise<string> => {
+  // For now, treat audio files as attachments
+  return `Audio file "${file.name}" received. I'll analyze it for any repair-related sounds or diagnostics.`;
+};
+
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hello! I'm your Fix-ISH AI assistant. Upload an image or video of your repair issue, or describe what you need help with.",
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,6 +63,9 @@ export default function ChatPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
     setMessages((prev) => [...prev, newMessage]);
+    if (role === "user") {
+      setShowTemplates(false);
+    }
   };
 
   const handleSendMessage = async (message: string) => {
@@ -65,7 +77,7 @@ export default function ChatPage() {
       setTimeout(() => {
         addMessage("assistant", response);
         setIsTyping(false);
-      }, 1000);
+      }, 800);
     } catch (error) {
       toast({
         title: "Error",
@@ -77,7 +89,7 @@ export default function ChatPage() {
   };
 
   const handleImageUpload = async (file: File) => {
-    addMessage("user", `[Uploaded image: ${file.name}]`);
+    addMessage("user", `📷 Uploaded image: ${file.name}`);
     setIsTyping(true);
 
     try {
@@ -85,11 +97,11 @@ export default function ChatPage() {
       setTimeout(() => {
         addMessage("assistant", response);
         setIsTyping(false);
-      }, 1500);
+      }, 1200);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to upload image. Please try again.",
+        description: "Failed to analyze image. Please try again.",
         variant: "destructive",
       });
       setIsTyping(false);
@@ -97,7 +109,7 @@ export default function ChatPage() {
   };
 
   const handleVideoUpload = async (file: File) => {
-    addMessage("user", `[Uploaded video: ${file.name}]`);
+    addMessage("user", `🎥 Uploaded video: ${file.name}`);
     setIsTyping(true);
 
     try {
@@ -105,67 +117,192 @@ export default function ChatPage() {
       setTimeout(() => {
         addMessage("assistant", response);
         setIsTyping(false);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to upload video. Please try again.",
+        description: "Failed to analyze video. Please try again.",
         variant: "destructive",
       });
       setIsTyping(false);
     }
   };
 
+  const handleAudioUpload = async (file: File) => {
+    addMessage("user", `🎵 Uploaded audio: ${file.name}`);
+    setIsTyping(true);
+
+    try {
+      const response = await sendAudioToBackend(file);
+      setTimeout(() => {
+        addMessage("assistant", response);
+        setIsTyping(false);
+      }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process audio. Please try again.",
+        variant: "destructive",
+      });
+      setIsTyping(false);
+    }
+  };
+
+  const handleTemplateSelect = (template: string) => {
+    handleSendMessage(template);
+  };
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setShowTemplates(true);
+    toast({
+      title: "New conversation started",
+      description: "Ready to help with your repair!",
+    });
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <div className="flex-1 flex flex-col pt-20">
-        <div className="bg-card border-b border-border py-6 px-6">
-          <div className="container mx-auto max-w-5xl">
-            <h1 className="text-3xl font-bold text-foreground">Fix-ISH AI Assistant</h1>
-            <p className="text-muted-foreground mt-1">Your intelligent repair companion</p>
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+            
+            <img src={logo} alt="Fix-ISH" className="h-8 w-auto" />
+            <div>
+              <h1 className="text-lg font-semibold flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-primary" />
+                Fix-ISH AI
+              </h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Your intelligent repair assistant</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={startNewConversation}
+              className="hidden sm:flex"
+            >
+              New Chat
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              title="Home"
+            >
+              <Home className="w-5 h-5" />
+            </Button>
+            <ThemeToggle />
           </div>
         </div>
+      </header>
 
-        <div className="flex-1 overflow-y-auto px-6 py-8">
-          <div className="container mx-auto max-w-5xl">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={index}
-                role={message.role}
-                content={message.content}
-                timestamp={message.timestamp}
-              />
-            ))}
-            
-            {isTyping && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-card text-card-foreground rounded-2xl px-4 py-3 shadow-soft border border-border rounded-bl-sm">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                  </div>
+      {/* Main Chat Area */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* Sidebar - Mobile */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.aside
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              className="lg:hidden absolute inset-y-0 left-0 w-64 bg-card border-r border-border z-40 pt-16"
+            >
+              <div className="p-4 space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={startNewConversation}
+                >
+                  + New Repair Chat
+                </Button>
+                <div className="text-xs text-muted-foreground pt-4 px-2">
+                  Previous conversations will appear here
                 </div>
               </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
-        <div className="container mx-auto max-w-5xl">
-          <ChatInput
+        {/* Messages Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto"
+          >
+            {showTemplates && messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <RepairTemplates onSelectTemplate={handleTemplateSelect} />
+              </div>
+            ) : (
+              <div className="max-w-4xl mx-auto w-full px-4 py-8">
+                {messages.map((message, index) => (
+                  <EnhancedChatMessage
+                    key={index}
+                    role={message.role}
+                    content={message.content}
+                    timestamp={message.timestamp}
+                  />
+                ))}
+
+                {/* Typing Indicator */}
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex gap-4 mb-6"
+                  >
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary-glow">
+                      <Wrench className="w-4 h-4 text-primary-foreground animate-pulse" />
+                    </div>
+                    <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
+                      <div className="flex gap-1">
+                        <motion.div
+                          className="w-2 h-2 bg-primary rounded-full"
+                          animate={{ y: [0, -8, 0] }}
+                          transition={{ duration: 0.6, repeat: Infinity }}
+                        />
+                        <motion.div
+                          className="w-2 h-2 bg-primary rounded-full"
+                          animate={{ y: [0, -8, 0] }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                        />
+                        <motion.div
+                          className="w-2 h-2 bg-primary rounded-full"
+                          animate={{ y: [0, -8, 0] }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <EnhancedChatInput
             onSendMessage={handleSendMessage}
             onImageUpload={handleImageUpload}
             onVideoUpload={handleVideoUpload}
+            onAudioUpload={handleAudioUpload}
             disabled={isTyping}
           />
         </div>
       </div>
-
-      <OverlayCanvas />
     </div>
   );
 }
