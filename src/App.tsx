@@ -2,12 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CookieConsent } from "@/components/CookieConsent";
 import { MainThemeProvider } from "@/contexts/MainThemeContext";
-import Index from "./pages/Index";
-import Chat from "./pages/Chat";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
+import HomePage from "./pages/HomePage";
+import ChatPage from "./pages/ChatPage";
+import FeaturesPage from "./pages/FeaturesPage";
+import PricingPage from "./pages/PricingPage";
+import SupportPage from "./pages/SupportPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,15 +19,18 @@ const App = () => (
     <Toaster />
     <Sonner />
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainThemeProvider><Index /></MainThemeProvider>} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/privacy" element={<MainThemeProvider><Privacy /></MainThemeProvider>} />
-        <Route path="/terms" element={<MainThemeProvider><Terms /></MainThemeProvider>} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<MainThemeProvider><NotFound /></MainThemeProvider>} />
-      </Routes>
-      <CookieConsent />
+      <MainThemeProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </MainThemeProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );
