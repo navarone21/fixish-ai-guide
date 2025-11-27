@@ -25,10 +25,7 @@ export class FixishClient {
     this.onData = params.onData;
   }
 
-  static getInstance(): FixishClient {
-    if (!FixishClient.instance) {
-      throw new Error("FixishClient not initialized. Use FixishProvider first.");
-    }
+  static getInstance(): FixishClient | null {
     return FixishClient.instance;
   }
 

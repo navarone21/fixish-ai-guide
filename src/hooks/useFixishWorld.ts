@@ -6,6 +6,7 @@ export function useFixishWorld() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
     
     const unsub = client.subscribe("world", (data) => {
       setWorld(data);
