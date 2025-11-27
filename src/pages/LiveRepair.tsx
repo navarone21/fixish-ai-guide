@@ -20,6 +20,8 @@ import StepSequencePanel from "@/components/StepSequencePanel";
 import DepthMapCanvas from "@/components/DepthMapCanvas";
 import PointCloudViewer from "@/components/PointCloudViewer";
 import MeshViewer from "@/components/MeshViewer";
+import HazardAlert from "@/components/HazardAlert";
+import { useFixishHazards } from "@/hooks/useFixishHazards";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -28,6 +30,7 @@ export default function LiveRepair() {
   const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const { overlay } = useFixish();
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
+  const hazards = useFixishHazards();
 
   const activeStep = world?.task_state?.active_step;
 
@@ -229,6 +232,7 @@ export default function LiveRepair() {
           <SafetyAlert />
           <MeshStatus />
           <StepSequencePanel sequence={world?.task_state?.sequence} />
+          <HazardAlert hazards={hazards} />
         </div>
       </main>
 
