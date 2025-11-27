@@ -15,6 +15,7 @@ import AROverlayCanvas from "@/components/AROverlayCanvas";
 import ActionArrow from "@/components/ActionArrow";
 import StepGuidanceOverlay from "@/components/StepGuidanceOverlay";
 import DirectionalArrow from "@/components/DirectionalArrow";
+import ActionPath from "@/components/ActionPath";
 import DepthMapCanvas from "@/components/DepthMapCanvas";
 import PointCloudViewer from "@/components/PointCloudViewer";
 import MeshViewer from "@/components/MeshViewer";
@@ -94,6 +95,11 @@ export default function LiveRepair() {
               x={center.x}
               y={center.y}
             />
+          )}
+
+          {/* ACTION PATH */}
+          {world?.task_state?.path && (
+            <ActionPath path={world.task_state.path} />
           )}
 
           {/* VIEW MODE TOGGLE */}
