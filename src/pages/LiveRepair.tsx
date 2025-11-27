@@ -28,9 +28,7 @@ export default function LiveRepair() {
   const { overlay } = useFixish();
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
 
-  const active = world?.task_state?.active_target;
-  const center = world?.task_state?.active_target_center;
-  const direction = world?.task_state?.arrow_direction;
+  const activeStep = world?.task_state?.active_step;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -77,29 +75,29 @@ export default function LiveRepair() {
           )}
 
           {/* STEP GUIDANCE */}
-          {active && (
+          {activeStep?.bbox && (
             <StepGuidanceOverlay
               target={{
-                x: active[0],
-                y: active[1],
-                w: active[2],
-                h: active[3],
+                x: activeStep.bbox[0],
+                y: activeStep.bbox[1],
+                w: activeStep.bbox[2],
+                h: activeStep.bbox[3],
               }}
             />
           )}
 
           {/* DIRECTIONAL ARROW */}
-          {center && direction && (
+          {activeStep?.direction && activeStep?.center && (
             <DirectionalArrow
-              dir={direction}
-              x={center.x}
-              y={center.y}
+              dir={activeStep.direction}
+              x={activeStep.center.x}
+              y={activeStep.center.y}
             />
           )}
 
           {/* ACTION PATH */}
-          {world?.task_state?.path && (
-            <ActionPath path={world.task_state.path} />
+          {activeStep?.path_points && (
+            <ActionPath path={activeStep.path_points} />
           )}
 
           {/* VIEW MODE TOGGLE */}
