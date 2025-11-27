@@ -7,6 +7,7 @@ import { FixishProvider } from "@/contexts/FixishProvider";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import LiveRepair from "./pages/LiveRepair";
+import Steps from "./pages/Steps";
 import ProjectsPage from "./pages/ProjectsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
@@ -27,7 +28,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
+            <Route path="/steps" element={<Steps />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
