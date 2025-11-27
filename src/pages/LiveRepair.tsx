@@ -28,6 +28,8 @@ import { FixishClient } from "@/lib/FixishClient";
 import ToolHUD from "@/components/ToolHUD";
 import ToolAlert from "@/components/ToolAlert";
 import { useFixishTool } from "@/hooks/useFixishTool";
+import StepCompletedBubble from "@/components/StepCompletedBubble";
+import { useStepAutoCompletion } from "@/hooks/useStepAutoCompletion";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -38,6 +40,7 @@ export default function LiveRepair() {
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
   const hazards = useFixishHazards();
   const tool = useFixishTool();
+  const autoComplete = useStepAutoCompletion();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
@@ -99,6 +102,9 @@ export default function LiveRepair() {
           {/* TOOL TRACKING */}
           <ToolHUD tool={tool} />
           <ToolAlert tool={tool} />
+          
+          {/* STEP COMPLETION */}
+          <StepCompletedBubble visible={autoComplete} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
