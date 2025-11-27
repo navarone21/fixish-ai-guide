@@ -33,6 +33,8 @@ import { useStepAutoCompletion } from "@/hooks/useStepAutoCompletion";
 import OcclusionWarning from "@/components/OcclusionWarning";
 import OcclusionDebug from "@/components/OcclusionDebug";
 import { useOcclusionMask } from "@/hooks/useOcclusionMask";
+import { useCamera } from "@/hooks/useCamera";
+import CameraSwitchButton from "@/components/CameraSwitchButton";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -48,6 +50,8 @@ export default function LiveRepair() {
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const { cameras, activeId, switchCamera } = useCamera(cameraVideoRef);
   
   useEffect(() => {
     const client = FixishClient.getInstance();
@@ -79,6 +83,7 @@ export default function LiveRepair() {
           />
           <canvas ref={canvasRef} className="hidden" />
           <video ref={handTrackingVideoRef} className="hidden" />
+          <video ref={cameraVideoRef} className="hidden" />
 
           {/* AR OVERLAY */}
           {world && (
@@ -115,6 +120,9 @@ export default function LiveRepair() {
           
           {/* OCCLUSION DEBUG */}
           <OcclusionDebug mask={occlusionMask} />
+          
+          {/* CAMERA SWITCHER */}
+          <CameraSwitchButton cameras={cameras} activeId={activeId} onSwitch={switchCamera} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
