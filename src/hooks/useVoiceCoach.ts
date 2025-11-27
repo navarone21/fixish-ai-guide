@@ -16,6 +16,7 @@ export function useVoiceCoach() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
 
     const unsubData = client.subscribe("data", (data) => {
       // Handle errors
