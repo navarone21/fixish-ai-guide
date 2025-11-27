@@ -27,6 +27,11 @@ export function useVoiceCoach() {
       if (data?.step_completed) {
         speak("Step completed. Great job. Moving to the next step.");
       }
+      
+      // Handle direct voice messages
+      if (data?.voice) {
+        speak(data.voice);
+      }
     });
 
     const unsubWorld = client.subscribe("world", (data) => {
