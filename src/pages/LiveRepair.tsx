@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { LiveVoice } from "@/components/LiveVoice";
 import { ARCanvas } from "@/components/ARCanvas";
+import { useFixish } from "@/contexts/FixishProvider";
 import { AnchorManager } from "@/lib/AnchorManager";
 import { DeviceMotionListener } from "@/lib/DeviceMotion";
 import { Navbar } from "@/components/landing/Navbar";
@@ -9,10 +10,16 @@ import { Footer } from "@/components/landing/Footer";
 const anchorMgr = new AnchorManager();
 
 const LiveRepair = () => {
+  const { overlay, instructions, objects, connect } = useFixish();
   const [transcript, setTranscript] = useState<string[]>([]);
   const [aiResponses, setAIResponses] = useState<string[]>([]);
   const [frameData, setFrameData] = useState<{ frame: string; anchors: any } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Connect to Fixish WebSocket on mount
+  useEffect(() => {
+    connect();
+  }, [connect]);
 
   const handleTranscript = (text: string) => {
     console.log("User said:", text);
@@ -60,9 +67,40 @@ const LiveRepair = () => {
           </div>
 
           {/* AR Canvas */}
-          {frameData && (
+          {overlay && (
             <div className="mb-8 flex justify-center">
-              <ARCanvas frame={frameData.frame} anchors={frameData.anchors} />
+              <div className="relative">
+                <img src={overlay} alt="AR Overlay" className="rounded-xl shadow-lg max-w-full" />
+                <div className="absolute top-4 right-4 bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg text-sm font-medium">
+                  Live AR
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Instructions */}
+          {instructions && (
+            <div className="mb-8 bg-primary/10 border border-primary/20 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-3">
+                Current Instructions
+              </h2>
+              <p className="text-foreground">{instructions}</p>
+            </div>
+          )}
+
+          {/* Detected Objects */}
+          {objects.length > 0 && (
+            <div className="mb-8 bg-accent/50 rounded-xl p-6 border border-border">
+              <h2 className="text-xl font-semibold text-foreground mb-3">
+                Detected Objects
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {objects.map((obj, idx) => (
+                  <div key={idx} className="bg-background rounded-lg px-3 py-1 border border-border text-sm">
+                    {obj.label || obj.class || 'Unknown'}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
