@@ -154,6 +154,22 @@ export class FixishClient {
     this.onData(data);
   }
 
+  // -----------------------------------------
+  // SEND ARBITRARY DATA (e.g., hand tracking)
+  // -----------------------------------------
+  send(data: any) {
+    if (this.usingWebSocket && this.ws && this.ws.readyState === 1) {
+      this.ws.send(
+        JSON.stringify({
+          session_id: this.sessionId,
+          ...data
+        })
+      );
+    } else {
+      console.warn("[Fixish] Cannot send data - WebSocket not connected");
+    }
+  }
+
   _b64ToBlob(base64: string) {
     const byteString = atob(base64.split(",")[1]);
     const arrayBuffer = new ArrayBuffer(byteString.length);
