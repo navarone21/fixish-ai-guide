@@ -6,6 +6,7 @@ import { AnchorManager } from "@/lib/AnchorManager";
 import { DeviceMotionListener } from "@/lib/DeviceMotion";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
+import "../styles/fixish.css";
 
 const anchorMgr = new AnchorManager();
 
