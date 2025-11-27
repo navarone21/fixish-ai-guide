@@ -1,42 +1,9 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useOcclusionMask } from "@/hooks/useOcclusionMask";
+import { convertMaskToPNG } from "@/utils/maskToPNG";
 
 interface Props {
   target: { x: number; y: number; w: number; h: number } | null;
-}
-
-// Helper function to convert 2D mask array to base64 PNG
-function convertMaskToPNG(mask: number[][]): string {
-  if (!mask || mask.length === 0) return "";
-  
-  const height = mask.length;
-  const width = mask[0].length;
-  
-  // Create canvas
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return "";
-  
-  // Create image data
-  const imageData = ctx.createImageData(width, height);
-  const data = imageData.data;
-  
-  // Fill with mask values (white = visible, black = occluded)
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const value = mask[y][x] * 255;
-      data[idx] = 255;     // R
-      data[idx + 1] = 255; // G
-      data[idx + 2] = 255; // B
-      data[idx + 3] = value; // A (opacity from mask)
-    }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png').split(',')[1];
 }
 
 export default function StepGuidanceOverlay({ target }: Props) {
