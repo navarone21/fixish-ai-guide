@@ -16,6 +16,7 @@ import ActionArrow from "@/components/ActionArrow";
 import StepGuidanceOverlay from "@/components/StepGuidanceOverlay";
 import DirectionalArrow from "@/components/DirectionalArrow";
 import ActionPath from "@/components/ActionPath";
+import StepSequencePanel from "@/components/StepSequencePanel";
 import DepthMapCanvas from "@/components/DepthMapCanvas";
 import PointCloudViewer from "@/components/PointCloudViewer";
 import MeshViewer from "@/components/MeshViewer";
@@ -227,6 +228,7 @@ export default function LiveRepair() {
           <ObjectsPanel />
           <SafetyAlert />
           <MeshStatus />
+          <StepSequencePanel sequence={world?.task_state?.sequence} />
         </div>
       </main>
 
