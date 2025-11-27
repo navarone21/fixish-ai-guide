@@ -18,6 +18,7 @@ export function useFixishGuidance() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
     
     const unsub = client.subscribe("world", (data) => {
       if (data?.guidance) {

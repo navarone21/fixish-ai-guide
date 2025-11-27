@@ -6,6 +6,7 @@ export function useFixishTool() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
     
     const unsub = client.subscribe("data", (data) => {
       if (data?.tool) {
