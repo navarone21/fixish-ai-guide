@@ -42,8 +42,12 @@ export class FixishClient {
       };
 
       this.ws.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        this.onData(data);
+        try {
+          const data = JSON.parse(msg.data);
+          this.onData(data);
+        } catch (err) {
+          console.error("[Fixish] WS parse error:", err);
+        }
       };
 
       this.ws.onclose = () => {
