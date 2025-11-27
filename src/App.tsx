@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import LiveRepair from "./pages/LiveRepair";
 import Steps from "./pages/Steps";
+import MeshViewerPage from "./pages/MeshViewer";
 import ProjectsPage from "./pages/ProjectsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
             <Route path="/steps" element={<Steps />} />
+            <Route path="/mesh" element={<MeshViewerPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
