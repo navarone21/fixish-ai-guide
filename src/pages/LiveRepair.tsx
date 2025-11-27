@@ -25,6 +25,9 @@ import { useFixishHazards } from "@/hooks/useFixishHazards";
 import { useHandTracking } from "@/hooks/useHandTracking";
 import GestureBubble from "@/components/GestureBubble";
 import { FixishClient } from "@/lib/FixishClient";
+import ToolHUD from "@/components/ToolHUD";
+import ToolAlert from "@/components/ToolAlert";
+import { useFixishTool } from "@/hooks/useFixishTool";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -34,6 +37,7 @@ export default function LiveRepair() {
   const { overlay } = useFixish();
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
   const hazards = useFixishHazards();
+  const tool = useFixishTool();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
@@ -91,6 +95,10 @@ export default function LiveRepair() {
           
           {/* GESTURE DISPLAY */}
           <GestureBubble gesture={gesture} />
+          
+          {/* TOOL TRACKING */}
+          <ToolHUD tool={tool} />
+          <ToolAlert tool={tool} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
