@@ -11,6 +11,7 @@ import ObjectsPanel from "@/components/ObjectsPanel";
 import MeshStatus from "@/components/MeshStatus";
 import GuidanceOverlay from "@/components/GuidanceOverlay";
 import AROverlayCanvas from "@/components/AROverlayCanvas";
+import ActionArrow from "@/components/ActionArrow";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -54,6 +55,14 @@ export default function LiveRepair() {
 
           {/* GUIDANCE OVERLAY */}
           <GuidanceOverlay message={guidance} />
+
+          {/* ACTION ARROW */}
+          {world?.task_state?.active_target_center && (
+            <ActionArrow
+              x={world.task_state.active_target_center.x}
+              y={world.task_state.active_target_center.y}
+            />
+          )}
 
           {/* STATE OVERLAYS */}
           {state === "idle" && (
