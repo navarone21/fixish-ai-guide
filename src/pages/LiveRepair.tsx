@@ -36,6 +36,8 @@ import { useOcclusionMask } from "@/hooks/useOcclusionMask";
 import { useCamera } from "@/hooks/useCamera";
 import CameraSwitchButton from "@/components/CameraSwitchButton";
 import CameraWarning from "@/components/CameraWarning";
+import ErrorAlert from "@/components/ErrorAlert";
+import { useFixishErrors } from "@/hooks/useFixishErrors";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -48,6 +50,7 @@ export default function LiveRepair() {
   const tool = useFixishTool();
   const autoComplete = useStepAutoCompletion();
   const occlusionMask = useOcclusionMask();
+  const errors = useFixishErrors();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
@@ -131,6 +134,9 @@ export default function LiveRepair() {
           
           {/* CAMERA WARNING */}
           <CameraWarning alive={camAlive} />
+          
+          {/* ERROR ALERT */}
+          <ErrorAlert errors={errors} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
