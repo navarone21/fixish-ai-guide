@@ -75,6 +75,27 @@ export default function LiveRepair() {
             />
           )}
 
+          {/* STEP GUIDANCE */}
+          {active && (
+            <StepGuidanceOverlay
+              target={{
+                x: active[0],
+                y: active[1],
+                w: active[2],
+                h: active[3],
+              }}
+            />
+          )}
+
+          {/* DIRECTIONAL ARROW */}
+          {center && direction && (
+            <DirectionalArrow
+              dir={direction}
+              x={center.x}
+              y={center.y}
+            />
+          )}
+
           {/* VIEW MODE TOGGLE */}
           <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
             <button
