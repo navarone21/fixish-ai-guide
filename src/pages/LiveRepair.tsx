@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { LiveVoice } from "@/components/LiveVoice";
+import { ARCanvas } from "@/components/ARCanvas";
+import { AnchorManager } from "@/lib/AnchorManager";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
+
+const anchorMgr = new AnchorManager();
 
 const LiveRepair = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [aiResponses, setAIResponses] = useState<string[]>([]);
+  const [frameData, setFrameData] = useState<{ frame: string; anchors: any } | null>(null);
 
   const handleTranscript = (text: string) => {
     console.log("User said:", text);
@@ -36,6 +41,13 @@ const LiveRepair = () => {
               onAIResponse={handleAIResponse}
             />
           </div>
+
+          {/* AR Canvas */}
+          {frameData && (
+            <div className="mb-8 flex justify-center">
+              <ARCanvas frame={frameData.frame} anchors={frameData.anchors} />
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Transcripts */}
