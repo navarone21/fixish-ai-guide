@@ -13,6 +13,8 @@ import MeshStatus from "@/components/MeshStatus";
 import GuidanceOverlay from "@/components/GuidanceOverlay";
 import AROverlayCanvas from "@/components/AROverlayCanvas";
 import ActionArrow from "@/components/ActionArrow";
+import StepGuidanceOverlay from "@/components/StepGuidanceOverlay";
+import DirectionalArrow from "@/components/DirectionalArrow";
 import DepthMapCanvas from "@/components/DepthMapCanvas";
 import PointCloudViewer from "@/components/PointCloudViewer";
 import MeshViewer from "@/components/MeshViewer";
@@ -24,6 +26,10 @@ export default function LiveRepair() {
   const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const { overlay } = useFixish();
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
+
+  const active = world?.task_state?.active_target;
+  const center = world?.task_state?.active_target_center;
+  const direction = world?.task_state?.arrow_direction;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
