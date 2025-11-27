@@ -7,6 +7,7 @@ export function useFixishState() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
     
     const unsub = client.subscribe("state", (data) => {
       if (data?.state) {
