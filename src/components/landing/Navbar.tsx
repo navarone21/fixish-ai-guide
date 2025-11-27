@@ -43,6 +43,9 @@ export function Navbar() {
             <a href="#contact" className="text-foreground hover:text-primary transition-colors">
               Contact
             </a>
+            <Link to="/projects" className="text-foreground hover:text-primary transition-colors">
+              Projects
+            </Link>
             <Link to="/chat">
               <Button>Get Started</Button>
             </Link>
@@ -89,6 +92,13 @@ export function Navbar() {
             >
               Contact
             </a>
+            <Link
+              to="/projects"
+              className="block text-foreground hover:text-primary transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Projects
+            </Link>
             <Link to="/chat" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full">Get Started</Button>
             </Link>
