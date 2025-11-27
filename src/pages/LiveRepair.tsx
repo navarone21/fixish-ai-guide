@@ -1,15 +1,18 @@
 import { useFixishState } from "@/hooks/useFixishState";
 import { useFixish } from "@/contexts/FixishProvider";
 import { useFixishCamera } from "@/hooks/useFixishCamera";
+import { useFixishGuidance } from "@/hooks/useFixishGuidance";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import SafetyAlert from "@/components/SafetyAlert";
 import InstructionsPanel from "@/components/InstructionsPanel";
 import ObjectsPanel from "@/components/ObjectsPanel";
 import MeshStatus from "@/components/MeshStatus";
+import GuidanceOverlay from "@/components/GuidanceOverlay";
 
 export default function LiveRepair() {
   const state = useFixishState();
+  const guidance = useFixishGuidance();
   const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const { overlay } = useFixish();
 
@@ -101,6 +104,7 @@ export default function LiveRepair() {
           )}
 
           {/* Always show panels */}
+          <GuidanceOverlay message={guidance} />
           <ObjectsPanel />
           <SafetyAlert />
           <MeshStatus />
