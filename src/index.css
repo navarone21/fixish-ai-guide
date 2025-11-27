@@ -173,4 +173,13 @@ All colors MUST be HSL.
   .animate-fade-in {
     animation: fadeIn 0.25s ease-out;
   }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-4px);
+    }
+    50% {
+      transform: translateY(4px);
+    }
+  }
 }
