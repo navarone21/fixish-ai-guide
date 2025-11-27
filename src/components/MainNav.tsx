@@ -8,6 +8,7 @@ export default function MainNav() {
 
       <Link to="/live" className="hover:text-primary transition-colors">Live Repair</Link>
       <Link to="/steps" className="hover:text-primary transition-colors">Steps</Link>
+      <Link to="/mesh" className="hover:text-primary transition-colors">Mesh</Link>
       <Link to="/projects" className="hover:text-primary transition-colors">Projects</Link>
       <Link to="/features" className="hover:text-primary transition-colors">Features</Link>
       <Link to="/support" className="hover:text-primary transition-colors">Support</Link>
