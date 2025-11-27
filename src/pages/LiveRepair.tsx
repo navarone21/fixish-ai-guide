@@ -39,6 +39,8 @@ import CameraWarning from "@/components/CameraWarning";
 import ErrorAlert from "@/components/ErrorAlert";
 import { useFixishErrors } from "@/hooks/useFixishErrors";
 import { useVoiceCoach } from "@/hooks/useVoiceCoach";
+import { useStepReplay } from "@/hooks/useStepReplay";
+import StepReplayGhost from "@/components/StepReplayGhost";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -52,12 +54,14 @@ export default function LiveRepair() {
   const autoComplete = useStepAutoCompletion();
   const occlusionMask = useOcclusionMask();
   const errors = useFixishErrors();
+  const replayData = useStepReplay();
   
   useVoiceCoach();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
   const [camAlive, setCamAlive] = useState(true);
+  const [replay, setReplay] = useState<any[]>([]);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const { cameras, activeId, switchCamera } = useCamera(cameraVideoRef);
   
@@ -73,6 +77,19 @@ export default function LiveRepair() {
     });
     return () => unsub();
   }, []);
+  
+  useEffect(() => {
+    if (replayData && replayData.length > 0) {
+      setReplay(replayData);
+    }
+  }, [replayData]);
+  
+  useEffect(() => {
+    if (gesture === "ok" && replay.length > 0) {
+      // Re-trigger the animation
+      setReplay([...replay]);
+    }
+  }, [gesture, replay]);
   
   useHandTracking(handTrackingVideoRef);
 
@@ -140,6 +157,9 @@ export default function LiveRepair() {
           
           {/* ERROR ALERT */}
           <ErrorAlert errors={errors} />
+          
+          {/* STEP REPLAY GHOST */}
+          <StepReplayGhost replay={replay} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
