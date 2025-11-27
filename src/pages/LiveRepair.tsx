@@ -41,6 +41,9 @@ export default function LiveRepair() {
             />
           )}
 
+          {/* GUIDANCE OVERLAY */}
+          <GuidanceOverlay message={guidance} />
+
           {/* STATE OVERLAYS */}
           {state === "idle" && (
             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4">
@@ -104,7 +107,6 @@ export default function LiveRepair() {
           )}
 
           {/* Always show panels */}
-          <GuidanceOverlay message={guidance} />
           <ObjectsPanel />
           <SafetyAlert />
           <MeshStatus />
