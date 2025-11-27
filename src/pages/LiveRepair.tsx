@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFixishState } from "@/hooks/useFixishState";
 import { useFixish } from "@/contexts/FixishProvider";
 import { useFixishCamera } from "@/hooks/useFixishCamera";
@@ -22,6 +22,9 @@ import PointCloudViewer from "@/components/PointCloudViewer";
 import MeshViewer from "@/components/MeshViewer";
 import HazardAlert from "@/components/HazardAlert";
 import { useFixishHazards } from "@/hooks/useFixishHazards";
+import { useHandTracking } from "@/hooks/useHandTracking";
+import GestureBubble from "@/components/GestureBubble";
+import { FixishClient } from "@/lib/FixishClient";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -31,6 +34,21 @@ export default function LiveRepair() {
   const { overlay } = useFixish();
   const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
   const hazards = useFixishHazards();
+  
+  const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
+  const [gesture, setGesture] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const client = FixishClient.getInstance();
+    const unsub = client.subscribe("data", (data) => {
+      if (data?.gesture) {
+        setGesture(data.gesture);
+      }
+    });
+    return () => unsub();
+  }, []);
+  
+  useHandTracking(handTrackingVideoRef);
 
   const activeStep = world?.task_state?.active_step;
 
@@ -49,6 +67,7 @@ export default function LiveRepair() {
             className="w-full h-full object-cover"
           />
           <canvas ref={canvasRef} className="hidden" />
+          <video ref={handTrackingVideoRef} className="hidden" />
 
           {/* AR OVERLAY */}
           {world && (
@@ -69,6 +88,9 @@ export default function LiveRepair() {
 
           {/* GUIDANCE OVERLAY */}
           <GuidanceOverlay message={guidance} />
+          
+          {/* GESTURE DISPLAY */}
+          <GestureBubble gesture={gesture} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
