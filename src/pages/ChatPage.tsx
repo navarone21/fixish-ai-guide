@@ -13,6 +13,8 @@ import { Home, Wrench, Menu, X, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import logo from "@/assets/logo-minimal.png";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 interface Message {
   role: "user" | "assistant";
@@ -32,7 +34,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showTemplates, setShowTemplates] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -213,105 +214,67 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden hover:bg-primary/10"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-            
-            <img src={logo} alt="Fix-ISH" className="h-9 w-auto" />
-            <div>
-              <h1 className="text-lg font-semibold">
-                Fix-ISH AI
-              </h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                Intelligent Repair Assistant
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={startNewConversation}
-              className="hidden sm:flex gap-2 hover:bg-primary/10"
-            >
-              <Zap className="w-4 h-4" />
-              New Chat
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              title="Home"
-              className="hover:bg-primary/10"
-            >
-              <Home className="w-5 h-5" />
-            </Button>
-            <ThemeToggle />
-          </div>
-        </div>
+    <SidebarProvider>
+      <div className="h-screen flex w-full bg-background">
+        <AppSidebar />
         
-        {/* Progress Bar */}
-        {uploadProgress > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="h-1 bg-primary/20"
-          >
-            <motion.div
-              className="h-full bg-primary"
-              initial={{ width: 0 }}
-              animate={{ width: `${uploadProgress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </motion.div>
-        )}
-      </header>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Sidebar - Mobile */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.aside
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              className="lg:hidden absolute inset-y-0 left-0 w-64 bg-card border-r border-border z-40 pt-16 shadow-lg"
-            >
-              <div className="p-4 space-y-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2 hover:bg-primary/10"
-                  onClick={startNewConversation}
-                >
-                  <Zap className="w-4 h-4" />
-                  New Repair Chat
-                </Button>
-                <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
-                  <ChatHistoryPanel />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="border-b border-border bg-card/80 backdrop-blur-sm z-50 shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="hover:bg-primary/10" />
+                
+                <img src={logo} alt="Fix-ISH" className="h-9 w-auto" />
+                <div>
+                  <h1 className="text-lg font-semibold">
+                    Fix-ISH AI
+                  </h1>
+                  <p className="text-xs text-muted-foreground hidden sm:block">
+                    Intelligent Repair Assistant
+                  </p>
                 </div>
               </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
 
-        {/* Messages Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-secondary/5"
-          >
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={startNewConversation}
+                  className="hidden sm:flex gap-2 hover:bg-primary/10"
+                >
+                  <Zap className="w-4 h-4" />
+                  New Chat
+                </Button>
+                <ThemeToggle />
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            {uploadProgress > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="h-1 bg-primary/20"
+              >
+                <motion.div
+                  className="h-full bg-primary"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.div>
+            )}
+          </header>
+
+          {/* Main Chat Area */}
+          <div className="flex-1 overflow-hidden flex">
+            {/* Messages Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-secondary/5"
+              >
             {showTemplates && messages.length === 0 ? (
               <div className="h-full flex items-center justify-center p-4">
                 <RepairTemplates onSelectTemplate={handleTemplateSelect} />
@@ -420,8 +383,10 @@ export default function ChatPage() {
               disabled={isTyping}
             />
           </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
