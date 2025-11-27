@@ -30,6 +30,7 @@ import ToolAlert from "@/components/ToolAlert";
 import { useFixishTool } from "@/hooks/useFixishTool";
 import StepCompletedBubble from "@/components/StepCompletedBubble";
 import { useStepAutoCompletion } from "@/hooks/useStepAutoCompletion";
+import OcclusionWarning from "@/components/OcclusionWarning";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -105,6 +106,9 @@ export default function LiveRepair() {
           
           {/* STEP COMPLETION */}
           <StepCompletedBubble visible={autoComplete} />
+          
+          {/* OCCLUSION WARNING */}
+          <OcclusionWarning occluded={activeStep?.occluded} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
