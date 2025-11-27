@@ -13,6 +13,9 @@ import MeshStatus from "@/components/MeshStatus";
 import GuidanceOverlay from "@/components/GuidanceOverlay";
 import AROverlayCanvas from "@/components/AROverlayCanvas";
 import ActionArrow from "@/components/ActionArrow";
+import DepthMapCanvas from "@/components/DepthMapCanvas";
+import PointCloudViewer from "@/components/PointCloudViewer";
+import MeshViewer from "@/components/MeshViewer";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -109,6 +112,23 @@ export default function LiveRepair() {
               Mesh
             </button>
           </div>
+
+          {/* VIEW MODE DISPLAYS */}
+          {viewMode === "depth" && world?.depth && (
+            <DepthMapCanvas 
+              depth={world.depth} 
+              width={window.innerWidth} 
+              height={window.innerHeight} 
+            />
+          )}
+
+          {viewMode === "pointcloud" && world?.point_cloud && (
+            <PointCloudViewer points={world.point_cloud} />
+          )}
+
+          {viewMode === "mesh" && world?.mesh && (
+            <MeshViewer mesh={world.mesh} />
+          )}
 
           {/* STATE OVERLAYS */}
           {state === "idle" && (
