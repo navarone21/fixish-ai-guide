@@ -15,7 +15,7 @@ export default function Steps() {
         {clip ? (
           <StepVideoPlayer frames={clip} />
         ) : (
-          <div className="text-gray-400">No clips recorded yet.</div>
+          <div className="text-gray-400">No step clips created yet.</div>
         )}
       </div>
     </div>
