@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LiveVoice } from "@/components/LiveVoice";
 import { ARCanvas } from "@/components/ARCanvas";
 import { AnchorManager } from "@/lib/AnchorManager";
+import { DeviceMotionListener } from "@/lib/DeviceMotion";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 
@@ -11,6 +12,7 @@ const LiveRepair = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [aiResponses, setAIResponses] = useState<string[]>([]);
   const [frameData, setFrameData] = useState<{ frame: string; anchors: any } | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   const handleTranscript = (text: string) => {
     console.log("User said:", text);
@@ -21,6 +23,21 @@ const LiveRepair = () => {
     console.log("AI narration:", narration);
     setAIResponses((prev) => [...prev, narration]);
   };
+
+  useEffect(() => {
+    const imu = new DeviceMotionListener((orientation) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "imu",
+            orientation,
+          })
+        );
+      }
+    });
+
+    imu.start();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
