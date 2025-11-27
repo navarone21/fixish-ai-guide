@@ -4,11 +4,11 @@ import { Camera } from "@mediapipe/camera_utils";
 import { FixishClient } from "@/lib/FixishClient";
 
 export function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>) {
-  const client = FixishClient.getInstance();
   const handsRef = useRef<Hands | null>(null);
 
   useEffect(() => {
-    if (!videoRef.current) return;
+    const client = FixishClient.getInstance();
+    if (!client || !videoRef.current) return;
 
     const hands = new Hands({
       locateFile: (file) =>
@@ -50,5 +50,5 @@ export function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>) {
       camera.stop();
       hands.close();
     };
-  }, [videoRef, client]);
+  }, [videoRef]);
 }
