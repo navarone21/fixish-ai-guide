@@ -1,26 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { LiveVoice } from "@/components/LiveVoice";
-import { ARCanvas } from "@/components/ARCanvas";
 import { useFixish } from "@/contexts/FixishProvider";
+import { useFixishCamera } from "@/hooks/useFixishCamera";
 import { AnchorManager } from "@/lib/AnchorManager";
 import { DeviceMotionListener } from "@/lib/DeviceMotion";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
+import SafetyAlert from "@/components/SafetyAlert";
+import InstructionsPanel from "@/components/InstructionsPanel";
+import StepsPanel from "@/components/StepsPanel";
+import MeshStatus from "@/components/MeshStatus";
 import "../styles/fixish.css";
 
 const anchorMgr = new AnchorManager();
 
 const LiveRepair = () => {
-  const { overlay, instructions, objects, connect } = useFixish();
+  const { overlay, instructions, objects } = useFixish();
+  const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const [transcript, setTranscript] = useState<string[]>([]);
   const [aiResponses, setAIResponses] = useState<string[]>([]);
-  const [frameData, setFrameData] = useState<{ frame: string; anchors: any } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-
-  // Connect to Fixish WebSocket on mount
-  useEffect(() => {
-    connect();
-  }, [connect]);
 
   const handleTranscript = (text: string) => {
     console.log("User said:", text);
@@ -52,58 +51,63 @@ const LiveRepair = () => {
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="fixish-container">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Live Voice Repair Assistant
+            Live AR Repair Assistant
           </h1>
           <p className="text-muted-foreground mb-8">
-            Speak with Fix-ISH AI in real-time for instant repair guidance
+            Point your camera at the damaged item for real-time repair guidance
           </p>
 
-          <div className="flex justify-center mb-8">
-            <LiveVoice 
-              onTranscript={handleTranscript}
-              onAIResponse={handleAIResponse}
-            />
+          {/* Camera + Overlay */}
+          <div className="camera-wrapper mb-8">
+            <video ref={videoRef} autoPlay playsInline muted className="camera-feed" />
+            <canvas ref={canvasRef} className="hidden" />
+
+            {overlay && (
+              <img
+                src={`data:image/jpeg;base64,${overlay}`}
+                alt="AR Overlay"
+                className="ai-overlay"
+              />
+            )}
           </div>
 
-          {/* AR Canvas */}
-          {overlay && (
-            <div className="mb-8 flex justify-center">
-              <div className="relative">
-                <img src={overlay} alt="AR Overlay" className="rounded-xl shadow-lg max-w-full" />
-                <div className="absolute top-4 right-4 bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg text-sm font-medium">
-                  Live AR
+          {/* Camera Controls */}
+          <button
+            onClick={isStreaming ? stopCamera : startCamera}
+            className="start-btn mb-8"
+          >
+            {isStreaming ? "Stop Camera" : "Start Camera"}
+          </button>
+
+          {/* Safety Alert */}
+          <div className="mb-6">
+            <SafetyAlert />
+          </div>
+
+          {/* Side Panel with All Status Components */}
+          <div className="side-panel space-y-6">
+            <InstructionsPanel />
+            <StepsPanel />
+            <MeshStatus />
+            
+            {/* Detected Objects */}
+            {objects.length > 0 && (
+              <div className="bg-accent/50 rounded-xl p-6 border border-border">
+                <h3 className="text-lg font-semibold text-accent-foreground mb-3">
+                  Detected Objects
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {objects.map((obj, idx) => (
+                    <div key={idx} className="bg-background rounded-lg px-3 py-1 border border-border text-sm">
+                      {obj.label || obj.class || 'Unknown'}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* AI Instructions */}
-          {instructions && (
-            <div className="mb-8 bg-primary/10 border border-primary/20 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-3">
-                Current Instructions
-              </h2>
-              <p className="text-foreground">{instructions}</p>
-            </div>
-          )}
-
-          {/* Detected Objects */}
-          {objects.length > 0 && (
-            <div className="mb-8 bg-accent/50 rounded-xl p-6 border border-border">
-              <h2 className="text-xl font-semibold text-foreground mb-3">
-                Detected Objects
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {objects.map((obj, idx) => (
-                  <div key={idx} className="bg-background rounded-lg px-3 py-1 border border-border text-sm">
-                    {obj.label || obj.class || 'Unknown'}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Transcripts */}
