@@ -36,6 +36,14 @@ export default function LiveRepair() {
           <canvas ref={canvasRef} className="hidden" />
 
           {/* AR OVERLAY */}
+          {world && (
+            <AROverlayCanvas
+              world={world}
+              width={window.innerWidth}
+              height={window.innerHeight}
+            />
+          )}
+
           {overlay && (
             <img
               src={`data:image/jpeg;base64,${overlay}`}
@@ -43,13 +51,6 @@ export default function LiveRepair() {
               className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-90"
             />
           )}
-
-          {/* AR CANVAS OVERLAYS */}
-          <AROverlayCanvas 
-            world={world} 
-            width={videoRef.current?.videoWidth || 1280} 
-            height={videoRef.current?.videoHeight || 720} 
-          />
 
           {/* GUIDANCE OVERLAY */}
           <GuidanceOverlay message={guidance} />
