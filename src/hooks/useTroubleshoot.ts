@@ -6,6 +6,7 @@ export function useTroubleshoot() {
 
   useEffect(() => {
     const client = FixishClient.getInstance();
+    if (!client) return;
     
     const unsub = client.subscribe("data", (data) => {
       if (data?.troubleshoot) {
