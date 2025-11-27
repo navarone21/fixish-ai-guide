@@ -45,8 +45,13 @@ import { useTroubleshoot } from "@/hooks/useTroubleshoot";
 import TroubleshootPanel from "@/components/TroubleshootPanel";
 import { useVideoClip } from "@/hooks/useVideoClip";
 import StepVideoPlayer from "@/components/StepVideoPlayer";
+import { useFeatureStore } from "@/state/featureStore";
+import FeatureToggles from "@/components/FeatureToggles";
+import SceneGraphPanel from "@/components/SceneGraphPanel";
+import GestureIndicator from "@/components/GestureIndicator";
 
 export default function LiveRepair() {
+  const { features } = useFeatureStore();
   const state = useFixishState();
   const guidance = useFixishGuidance();
   const world = useFixishWorld();
@@ -140,7 +145,7 @@ export default function LiveRepair() {
           <GuidanceOverlay message={guidance} />
           
           {/* GESTURE DISPLAY */}
-          <GestureBubble gesture={gesture} />
+          {features.gestureControl && <GestureBubble gesture={gesture} />}
           
           {/* TOOL TRACKING */}
           <ToolHUD tool={tool} />
@@ -165,13 +170,27 @@ export default function LiveRepair() {
           <ErrorAlert errors={errors} />
           
           {/* STEP REPLAY GHOST */}
-          <StepReplayGhost replay={replay} />
+          {features.ghostReplay && replay.length > 0 && <StepReplayGhost replay={replay} />}
           
           {/* TROUBLESHOOT PANEL */}
-          <TroubleshootPanel trouble={trouble} />
+          {features.troubleshooting && trouble && <TroubleshootPanel trouble={trouble} />}
           
           {/* STEP VIDEO PLAYER */}
-          {videoClip && <StepVideoPlayer frames={videoClip} />}
+          {features.stepClips && videoClip && <StepVideoPlayer frames={videoClip} />}
+          
+          {/* SCENE GRAPH PANEL */}
+          {features.sceneGraph && world?.scene_graph && (
+            <div className="absolute top-20 left-4 w-64 z-30">
+              <SceneGraphPanel scene={world.scene_graph} />
+            </div>
+          )}
+          
+          {/* GESTURE INDICATOR */}
+          {features.gestureControl && gesture && (
+            <div className="absolute bottom-20 right-4 w-48 z-30">
+              <GestureIndicator gesture={gesture} />
+            </div>
+          )}
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
@@ -209,6 +228,7 @@ export default function LiveRepair() {
 
           {/* VIEW MODE TOGGLE */}
           <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+            <FeatureToggles />
             <button
               onClick={() => setViewMode("camera")}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
@@ -252,7 +272,7 @@ export default function LiveRepair() {
           </div>
 
           {/* VIEW MODE DISPLAYS */}
-          {viewMode === "depth" && world?.depth && (
+          {features.depth && viewMode === "depth" && world?.depth && (
             <DepthMapCanvas 
               depth={world.depth} 
               width={window.innerWidth} 
@@ -264,7 +284,7 @@ export default function LiveRepair() {
             <PointCloudViewer points={world.point_cloud} />
           )}
 
-          {viewMode === "mesh" && world?.mesh && (
+          {features.mesh && viewMode === "mesh" && world?.mesh && (
             <MeshViewer mesh={world.mesh} />
           )}
 
