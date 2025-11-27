@@ -6,6 +6,7 @@ import { RepairTemplates } from "@/components/RepairTemplates";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
 import { LiveVoice } from "@/components/LiveVoice";
+import ChatHistoryPanel from "@/components/ChatHistoryPanel";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Home, Wrench, Menu, X, Zap } from "lucide-react";
@@ -228,8 +229,7 @@ export default function ChatPage() {
             
             <img src={logo} alt="Fix-ISH" className="h-9 w-auto" />
             <div>
-              <h1 className="text-lg font-semibold flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-primary" />
+              <h1 className="text-lg font-semibold">
                 Fix-ISH AI
               </h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
@@ -289,7 +289,7 @@ export default function ChatPage() {
               exit={{ x: -300 }}
               className="lg:hidden absolute inset-y-0 left-0 w-64 bg-card border-r border-border z-40 pt-16 shadow-lg"
             >
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-4">
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2 hover:bg-primary/10"
@@ -298,8 +298,8 @@ export default function ChatPage() {
                   <Zap className="w-4 h-4" />
                   New Repair Chat
                 </Button>
-                <div className="text-xs text-muted-foreground pt-4 px-2">
-                  Previous conversations will appear here
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+                  <ChatHistoryPanel />
                 </div>
               </div>
             </motion.aside>
