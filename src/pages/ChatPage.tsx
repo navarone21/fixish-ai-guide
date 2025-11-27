@@ -5,6 +5,7 @@ import { EnhancedChatInput } from "@/components/EnhancedChatInput";
 import { RepairTemplates } from "@/components/RepairTemplates";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
+import { LiveVoice } from "@/components/LiveVoice";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Home, Wrench, Menu, X, Zap } from "lucide-react";
@@ -395,13 +396,30 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <EnhancedChatInput
-            onSendMessage={handleSendMessage}
-            onImageUpload={handleImageUpload}
-            onVideoUpload={handleVideoUpload}
-            onAudioUpload={handleAudioUpload}
-            disabled={isTyping}
-          />
+          <div className="border-t border-border bg-card/80 backdrop-blur-sm p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <LiveVoice 
+                onTranscript={(text) => {
+                  console.log("User said:", text);
+                  handleSendMessage(text);
+                }}
+                onAIResponse={(narration) => {
+                  console.log("AI narration:", narration);
+                  addMessage("assistant", narration);
+                }}
+              />
+              <span className="text-xs text-muted-foreground">
+                or type your message below
+              </span>
+            </div>
+            <EnhancedChatInput
+              onSendMessage={handleSendMessage}
+              onImageUpload={handleImageUpload}
+              onVideoUpload={handleVideoUpload}
+              onAudioUpload={handleAudioUpload}
+              disabled={isTyping}
+            />
+          </div>
         </div>
       </div>
     </div>
