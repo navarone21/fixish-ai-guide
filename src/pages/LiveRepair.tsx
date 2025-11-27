@@ -41,6 +41,8 @@ import { useFixishErrors } from "@/hooks/useFixishErrors";
 import { useVoiceCoach } from "@/hooks/useVoiceCoach";
 import { useStepReplay } from "@/hooks/useStepReplay";
 import StepReplayGhost from "@/components/StepReplayGhost";
+import { useTroubleshoot } from "@/hooks/useTroubleshoot";
+import TroubleshootPanel from "@/components/TroubleshootPanel";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -55,6 +57,7 @@ export default function LiveRepair() {
   const occlusionMask = useOcclusionMask();
   const errors = useFixishErrors();
   const replayData = useStepReplay();
+  const trouble = useTroubleshoot();
   
   useVoiceCoach();
   
@@ -160,6 +163,9 @@ export default function LiveRepair() {
           
           {/* STEP REPLAY GHOST */}
           <StepReplayGhost replay={replay} />
+          
+          {/* TROUBLESHOOT PANEL */}
+          <TroubleshootPanel trouble={trouble} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
