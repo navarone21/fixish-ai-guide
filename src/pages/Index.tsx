@@ -17,6 +17,7 @@ import testimonialTaylor from "@/assets/testimonial-taylor.jpg";
 import testimonialSam from "@/assets/testimonial-sam.jpg";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { useMainTheme } from "@/contexts/MainThemeContext";
+import { FeaturesDropdown } from "@/components/FeaturesDropdown";
 
 const Index = () => {
   const { toast } = useToast();
@@ -100,7 +101,8 @@ const Index = () => {
     <div className="min-h-screen relative bg-background">
       <RepairWorkshopBackground />
       
-      <div className="fixed top-6 right-6 z-50">
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <FeaturesDropdown />
         <ThemeToggle />
       </div>
 
