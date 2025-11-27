@@ -69,6 +69,7 @@ export const FixishProvider = ({
     });
 
     setClient(fixish);
+    FixishClient.setInstance(fixish);
 
     // Start the task session
     fixish.startSession();

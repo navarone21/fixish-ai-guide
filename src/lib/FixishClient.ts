@@ -1,12 +1,19 @@
 // FixishClient.ts - WebSocket/REST hybrid client for Fix-ISH backend
 
+type Subscriber = (data: any) => void;
+type EventType = "state" | "world" | "data";
+
 export class FixishClient {
+  private static instance: FixishClient | null = null;
+  
   ws: WebSocket | null = null;
   sessionId: string;
   backendUrl: string;
   onData: (data: any) => void;
   reconnectTimer: any = null;
   usingWebSocket: boolean = false;
+  
+  private subscribers: Map<EventType, Set<Subscriber>> = new Map();
 
   constructor(params: {
     backendUrl: string;
@@ -16,6 +23,32 @@ export class FixishClient {
     this.backendUrl = params.backendUrl;
     this.sessionId = params.sessionId || this._generateSession();
     this.onData = params.onData;
+  }
+
+  static getInstance(): FixishClient {
+    if (!FixishClient.instance) {
+      throw new Error("FixishClient not initialized. Use FixishProvider first.");
+    }
+    return FixishClient.instance;
+  }
+
+  static setInstance(instance: FixishClient) {
+    FixishClient.instance = instance;
+  }
+
+  subscribe(eventType: EventType, callback: Subscriber): () => void {
+    if (!this.subscribers.has(eventType)) {
+      this.subscribers.set(eventType, new Set());
+    }
+    this.subscribers.get(eventType)!.add(callback);
+    
+    return () => {
+      this.subscribers.get(eventType)?.delete(callback);
+    };
+  }
+
+  private broadcast(eventType: EventType, data: any) {
+    this.subscribers.get(eventType)?.forEach(cb => cb(data));
   }
 
   _generateSession() {
@@ -44,6 +77,18 @@ export class FixishClient {
       this.ws.onmessage = (msg) => {
         try {
           const data = JSON.parse(msg.data);
+          
+          // Broadcast AI state to subscribers
+          if (data.state) {
+            this.broadcast("state", data);
+          }
+          
+          // Broadcast world-state
+          if (data.world) {
+            this.broadcast("world", data);
+          }
+          
+          // Original callback
           this.onData(data);
         } catch (err) {
           console.error("[Fixish] WS parse error:", err);
