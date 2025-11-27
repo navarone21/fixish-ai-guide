@@ -38,6 +38,7 @@ import CameraSwitchButton from "@/components/CameraSwitchButton";
 import CameraWarning from "@/components/CameraWarning";
 import ErrorAlert from "@/components/ErrorAlert";
 import { useFixishErrors } from "@/hooks/useFixishErrors";
+import { useVoiceCoach } from "@/hooks/useVoiceCoach";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -51,6 +52,8 @@ export default function LiveRepair() {
   const autoComplete = useStepAutoCompletion();
   const occlusionMask = useOcclusionMask();
   const errors = useFixishErrors();
+  
+  useVoiceCoach();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
