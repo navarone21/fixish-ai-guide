@@ -43,6 +43,8 @@ import { useStepReplay } from "@/hooks/useStepReplay";
 import StepReplayGhost from "@/components/StepReplayGhost";
 import { useTroubleshoot } from "@/hooks/useTroubleshoot";
 import TroubleshootPanel from "@/components/TroubleshootPanel";
+import { useVideoClip } from "@/hooks/useVideoClip";
+import StepVideoPlayer from "@/components/StepVideoPlayer";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -58,6 +60,7 @@ export default function LiveRepair() {
   const errors = useFixishErrors();
   const replayData = useStepReplay();
   const trouble = useTroubleshoot();
+  const videoClip = useVideoClip();
   
   useVoiceCoach();
   
@@ -166,6 +169,9 @@ export default function LiveRepair() {
           
           {/* TROUBLESHOOT PANEL */}
           <TroubleshootPanel trouble={trouble} />
+          
+          {/* STEP VIDEO PLAYER */}
+          {videoClip && <StepVideoPlayer frames={videoClip} />}
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
