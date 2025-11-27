@@ -31,6 +31,8 @@ import { useFixishTool } from "@/hooks/useFixishTool";
 import StepCompletedBubble from "@/components/StepCompletedBubble";
 import { useStepAutoCompletion } from "@/hooks/useStepAutoCompletion";
 import OcclusionWarning from "@/components/OcclusionWarning";
+import OcclusionDebug from "@/components/OcclusionDebug";
+import { useOcclusionMask } from "@/hooks/useOcclusionMask";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -42,6 +44,7 @@ export default function LiveRepair() {
   const hazards = useFixishHazards();
   const tool = useFixishTool();
   const autoComplete = useStepAutoCompletion();
+  const occlusionMask = useOcclusionMask();
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
@@ -109,6 +112,9 @@ export default function LiveRepair() {
           
           {/* OCCLUSION WARNING */}
           <OcclusionWarning occluded={activeStep?.occluded} />
+          
+          {/* OCCLUSION DEBUG */}
+          <OcclusionDebug mask={occlusionMask} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
