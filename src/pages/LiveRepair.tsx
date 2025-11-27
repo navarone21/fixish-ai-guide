@@ -35,6 +35,7 @@ import OcclusionDebug from "@/components/OcclusionDebug";
 import { useOcclusionMask } from "@/hooks/useOcclusionMask";
 import { useCamera } from "@/hooks/useCamera";
 import CameraSwitchButton from "@/components/CameraSwitchButton";
+import CameraWarning from "@/components/CameraWarning";
 
 export default function LiveRepair() {
   const state = useFixishState();
@@ -50,6 +51,7 @@ export default function LiveRepair() {
   
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const [gesture, setGesture] = useState<string | null>(null);
+  const [camAlive, setCamAlive] = useState(true);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const { cameras, activeId, switchCamera } = useCamera(cameraVideoRef);
   
@@ -58,6 +60,9 @@ export default function LiveRepair() {
     const unsub = client.subscribe("data", (data) => {
       if (data?.gesture) {
         setGesture(data.gesture);
+      }
+      if (data?.camera_alive !== undefined) {
+        setCamAlive(data.camera_alive);
       }
     });
     return () => unsub();
@@ -123,6 +128,9 @@ export default function LiveRepair() {
           
           {/* CAMERA SWITCHER */}
           <CameraSwitchButton cameras={cameras} activeId={activeId} onSwitch={switchCamera} />
+          
+          {/* CAMERA WARNING */}
+          <CameraWarning alive={camAlive} />
 
           {/* ACTION ARROW */}
           {world?.task_state?.active_target_center && (
