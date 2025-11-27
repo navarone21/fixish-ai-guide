@@ -2,6 +2,7 @@ import { useFixishState } from "@/hooks/useFixishState";
 import { useFixish } from "@/contexts/FixishProvider";
 import { useFixishCamera } from "@/hooks/useFixishCamera";
 import { useFixishGuidance } from "@/hooks/useFixishGuidance";
+import { useFixishWorld } from "@/hooks/useFixishWorld";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import SafetyAlert from "@/components/SafetyAlert";
@@ -9,10 +10,12 @@ import InstructionsPanel from "@/components/InstructionsPanel";
 import ObjectsPanel from "@/components/ObjectsPanel";
 import MeshStatus from "@/components/MeshStatus";
 import GuidanceOverlay from "@/components/GuidanceOverlay";
+import AROverlayCanvas from "@/components/AROverlayCanvas";
 
 export default function LiveRepair() {
   const state = useFixishState();
   const guidance = useFixishGuidance();
+  const world = useFixishWorld();
   const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const { overlay } = useFixish();
 
@@ -40,6 +43,13 @@ export default function LiveRepair() {
               className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-90"
             />
           )}
+
+          {/* AR CANVAS OVERLAYS */}
+          <AROverlayCanvas 
+            world={world} 
+            width={videoRef.current?.videoWidth || 1280} 
+            height={videoRef.current?.videoHeight || 720} 
+          />
 
           {/* GUIDANCE OVERLAY */}
           <GuidanceOverlay message={guidance} />
