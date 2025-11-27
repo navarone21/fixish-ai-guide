@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useFixishState } from "@/hooks/useFixishState";
 import { useFixish } from "@/contexts/FixishProvider";
 import { useFixishCamera } from "@/hooks/useFixishCamera";
@@ -19,6 +20,7 @@ export default function LiveRepair() {
   const world = useFixishWorld();
   const { videoRef, canvasRef, startCamera, stopCamera, isStreaming } = useFixishCamera();
   const { overlay } = useFixish();
+  const [viewMode, setViewMode] = useState<"camera" | "depth" | "pointcloud" | "mesh">("camera");
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -63,6 +65,50 @@ export default function LiveRepair() {
               y={world.task_state.active_target_center.y}
             />
           )}
+
+          {/* VIEW MODE TOGGLE */}
+          <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+            <button
+              onClick={() => setViewMode("camera")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "camera"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            >
+              Camera
+            </button>
+            <button
+              onClick={() => setViewMode("depth")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "depth"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            >
+              Depth
+            </button>
+            <button
+              onClick={() => setViewMode("pointcloud")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "pointcloud"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            >
+              Points
+            </button>
+            <button
+              onClick={() => setViewMode("mesh")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "mesh"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            >
+              Mesh
+            </button>
+          </div>
 
           {/* STATE OVERLAYS */}
           {state === "idle" && (
