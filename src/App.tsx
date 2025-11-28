@@ -20,6 +20,11 @@ import SupportPage from "./pages/SupportPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import NotFound from "./pages/NotFound";
+import ReplayMode from "./pages/ReplayMode";
+import DepthVision from "./pages/DepthVision";
+import ToolsPanel from "./pages/ToolsPanel";
+import ExplorePage from "./pages/ExplorePage";
+import FeatureToggles from "./pages/FeatureToggles";
 
 const queryClient = new QueryClient();
 
@@ -33,10 +38,15 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/explore" element={<ExplorePage />} />
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
+            <Route path="/replay" element={<ReplayMode />} />
             <Route path="/steps" element={<Steps />} />
             <Route path="/mesh" element={<MeshViewer />} />
+            <Route path="/depth" element={<DepthVision />} />
+            <Route path="/tools" element={<ToolsPanel />} />
+            <Route path="/feature-toggles" element={<FeatureToggles />} />
             <Route path="/scene" element={<SceneGraphPage />} />
             <Route path="/diag" element={<Diagnostics />} />
             <Route path="/help" element={<HelpCenter />} />
