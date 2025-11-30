@@ -610,13 +610,172 @@ export default function SuperAgent() {
         {activeModule === 'settings' && (
           <div className="module">
             <h1>Settings</h1>
-            <button onClick={toggleTheme} className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-              Toggle Light/Dark Mode
-            </button>
-            <br /><br />
-            <button onClick={() => navigate("/")} className="px-6 py-3 rounded-lg border border-white/10 hover:bg-white/5">
-              ← Back to Landing Page
-            </button>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Appearance</h3>
+            <div className="setting-card">
+              <div className="flex justify-between items-center">
+                <label className="font-medium">🌗 Theme</label>
+                <button 
+                  onClick={toggleTheme}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Toggle {theme === 'light' ? 'Dark' : 'Light'} Mode
+                </button>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">AI & Processing</h3>
+            <div className="setting-card">
+              <label className="font-medium block mb-2">🤖 AI Backend</label>
+              <p className="text-sm opacity-70 mb-2">Fix-ISH uses advanced AI models for repair analysis</p>
+              <select 
+                className="w-full p-2 rounded-lg border border-gray-300"
+                style={{ background: theme === 'light' ? '#FFF' : '#1F2937' }}
+                disabled
+              >
+                <option>Fix-ISH Auto (Recommended)</option>
+              </select>
+            </div>
+
+            <div className="setting-card">
+              <label className="font-medium block mb-2">⚡ Processing Mode</label>
+              <select 
+                className="w-full p-2 rounded-lg border border-gray-300"
+                style={{ background: theme === 'light' ? '#FFF' : '#1F2937' }}
+              >
+                <option>Normal</option>
+                <option>High Detail</option>
+                <option>Fast Mode</option>
+              </select>
+            </div>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Camera & Audio</h3>
+            <div className="setting-card">
+              <div className="flex justify-between items-center">
+                <label className="font-medium">📸 Camera Permission</label>
+                <button 
+                  onClick={async () => {
+                    try {
+                      await navigator.mediaDevices.getUserMedia({ video: true });
+                      toast({ title: "Success", description: "Camera access granted" });
+                    } catch (error) {
+                      toast({ 
+                        title: "Permission Denied", 
+                        description: "Please allow camera access in browser settings",
+                        variant: "destructive" 
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+                  style={{ background: theme === 'light' ? '#FFF' : '#1F2937' }}
+                >
+                  Request Access
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-card">
+              <div className="flex justify-between items-center">
+                <label className="font-medium">🎤 Microphone Permission</label>
+                <button 
+                  onClick={async () => {
+                    try {
+                      await navigator.mediaDevices.getUserMedia({ audio: true });
+                      toast({ title: "Success", description: "Microphone access granted" });
+                    } catch (error) {
+                      toast({ 
+                        title: "Permission Denied", 
+                        description: "Please allow microphone access in browser settings",
+                        variant: "destructive" 
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+                  style={{ background: theme === 'light' ? '#FFF' : '#1F2937' }}
+                >
+                  Request Access
+                </button>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Data & Storage</h3>
+            <div className="setting-card">
+              <div className="flex justify-between items-center">
+                <div>
+                  <label className="font-medium block">🗂 Clear Project History</label>
+                  <p className="text-xs opacity-60 mt-1">Delete all saved conversations</p>
+                </div>
+                <button 
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to delete all conversation history? This cannot be undone.')) {
+                      try {
+                        for (const conv of conversations) {
+                          await deleteConversation(conv.id);
+                        }
+                        toast({ title: "Success", description: "All conversations deleted" });
+                      } catch (error) {
+                        toast({ 
+                          title: "Error", 
+                          description: "Failed to clear history",
+                          variant: "destructive" 
+                        });
+                      }
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-card">
+              <div className="flex justify-between items-center">
+                <div>
+                  <label className="font-medium block">💾 Export FIX-ISH Data</label>
+                  <p className="text-xs opacity-60 mt-1">Download all conversations as JSON</p>
+                </div>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const exportData = {
+                        exported_at: new Date().toISOString(),
+                        conversations: conversations,
+                        user_id: userId,
+                        version: "1.0"
+                      };
+                      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `fixish-export-${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Success", description: "Data exported successfully" });
+                    } catch (error) {
+                      toast({ 
+                        title: "Error", 
+                        description: "Failed to export data",
+                        variant: "destructive" 
+                      });
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Export JSON
+                </button>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Navigation</h3>
+            <div className="setting-card">
+              <button 
+                onClick={() => navigate("/")} 
+                className="w-full px-6 py-3 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                ← Back to Landing Page
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -804,6 +963,19 @@ export default function SuperAgent() {
 
         .sa-upload-btn:hover {
           background: #CBD5E1;
+        }
+
+        .setting-card {
+          background: rgba(0, 110, 255, 0.04);
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(0, 110, 255, 0.1);
+        }
+
+        .dark-mode .setting-card {
+          background: rgba(0, 110, 255, 0.08);
+          border: 1px solid rgba(0, 110, 255, 0.2);
         }
 
         .message {
