@@ -91,3 +91,25 @@
     font-weight: bold;
     color: #2563eb;
 }
+
+/* LABEL H — Mesh Viewer Styles */
+.mesh-viewer {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.mesh-canvas {
+  width: 70%;
+  height: 500px;
+  background: #0D0D14;
+  border-radius: 12px;
+}
+
+.mesh-meta {
+  width: 30%;
+  background: #1E2635;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+}
