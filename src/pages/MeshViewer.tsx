@@ -49,15 +49,17 @@ export default function MeshViewerPage() {
     <div className="w-full h-screen bg-background text-foreground">
       <MainNav />
 
-      <div className="mesh-viewer relative w-full h-[calc(100vh-64px)]">
-        {/* LABEL C — Mesh Viewer UI Shell */}
-        
+      <div className="mesh-viewer-container relative w-full h-[calc(100vh-64px)]">
         {/* Canvas where 3D appears */}
-        <canvas ref={canvasRef} className="mesh-canvas w-full h-full" />
+        <canvas 
+          id="meshCanvas"
+          ref={canvasRef} 
+          className="mesh-canvas w-full h-full" 
+        />
 
-        {/* Info panel — will fill this later */}
-        <div className="mesh-meta absolute top-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg">
-          <h2 className="text-lg font-semibold mb-2">Mesh Details</h2>
+        {/* Mesh Info Panel */}
+        <div className="mesh-info-panel absolute top-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg">
+          <h2 className="text-lg font-semibold mb-2">Mesh Info</h2>
           <p className="text-sm text-muted-foreground">Vertices: {meshMeta?.vertices ?? "-"}</p>
           <p className="text-sm text-muted-foreground">Faces: {meshMeta?.faces ?? "-"}</p>
         </div>
