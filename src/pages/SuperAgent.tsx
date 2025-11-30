@@ -515,7 +515,69 @@ export default function SuperAgent() {
         {activeModule === 'steps' && (
           <div className="module">
             <h1>Steps Library</h1>
-            <div id="steps-list" className="text-sm opacity-70">No steps available</div>
+            <p className="text-sm opacity-70 mb-6">Common repair procedures and guides</p>
+
+            <div id="steps-list">
+              <div className="step-card">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Replace battery</h3>
+                    <p className="text-sm opacity-60 mt-1">10 steps • 30 min</p>
+                  </div>
+                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                    View
+                  </button>
+                </div>
+              </div>
+
+              <div className="step-card">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Fix charging port</h3>
+                    <p className="text-sm opacity-60 mt-1">6 steps • 20 min</p>
+                  </div>
+                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                    View
+                  </button>
+                </div>
+              </div>
+
+              <div className="step-card">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Repair broken hinge</h3>
+                    <p className="text-sm opacity-60 mt-1">8 steps • 45 min</p>
+                  </div>
+                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                    View
+                  </button>
+                </div>
+              </div>
+
+              <div className="step-card">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Replace cracked screen</h3>
+                    <p className="text-sm opacity-60 mt-1">12 steps • 60 min</p>
+                  </div>
+                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                    View
+                  </button>
+                </div>
+              </div>
+
+              <div className="step-card">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Clean cooling system</h3>
+                    <p className="text-sm opacity-60 mt-1">5 steps • 15 min</p>
+                  </div>
+                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm">
+                    View
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -967,11 +1029,25 @@ export default function SuperAgent() {
         }
 
         .step-card {
-          background: #E6F2FF;
-          border-left: 4px solid #2A6DF1;
-          padding: 12px 15px;
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          padding: 16px;
           border-radius: 10px;
           margin-bottom: 12px;
+          transition: border-color 0.2s ease;
+        }
+
+        .step-card:hover {
+          border-color: #2A6DF1;
+        }
+
+        .dark-mode .step-card {
+          background: #1D2433;
+          border: 1px solid #394457;
+        }
+
+        .dark-mode .step-card:hover {
+          border-color: #2A6DF1;
         }
 
         .tool-card {
