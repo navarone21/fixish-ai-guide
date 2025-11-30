@@ -13,6 +13,9 @@ interface Message {
     url: string;
     name?: string;
   };
+  steps?: string[];
+  tools?: string[];
+  warnings?: string[];
 }
 
 export default function SuperAgent() {
@@ -57,12 +60,21 @@ export default function SuperAgent() {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() && !mediaPreview) return;
 
     const userMessage: Message = {
       role: "user",
-      content: input,
+      content: input || "[Media Uploaded]",
       timestamp: new Date(),
       media: mediaPreview ? {
         type: mediaPreview.type as any,
@@ -72,24 +84,33 @@ export default function SuperAgent() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput("");
+    const currentMedia = mediaPreview;
     setMediaPreview(null);
     setIsLoading(true);
 
     try {
-      const formData = new FormData();
-      
-      if (mediaPreview) {
-        formData.append("file", mediaPreview.file);
-        formData.append("prompt", input || "Analyze this and provide repair guidance");
-      } else {
-        formData.append("prompt", input);
+      const payload: any = {
+        prompt: currentInput || "Analyze this and provide repair guidance",
+        mode: "auto"
+      };
+
+      if (currentMedia) {
+        const base64 = await fileToBase64(currentMedia.file);
+        payload.media = [{
+          name: currentMedia.file.name,
+          type: currentMedia.file.type,
+          data: base64
+        }];
       }
-      formData.append("mode", "auto");
 
       const response = await fetch("https://fix-ish-1.onrender.com/ask", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -100,8 +121,11 @@ export default function SuperAgent() {
       
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.response || data.message || "I've analyzed your request. Here's what I found...",
-        timestamp: new Date()
+        content: data.reply || data.response || data.message || "I've analyzed your request. Here's what I found...",
+        timestamp: new Date(),
+        steps: data.steps || undefined,
+        tools: data.tools || undefined,
+        warnings: data.warnings || undefined
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -192,78 +216,127 @@ export default function SuperAgent() {
         {/* SUPER AGENT MODULE */}
         {activeModule === 'agent' && (
           <div className="module">
-            <h1>Super Agent</h1>
-            <p>Full multimodal chat + analysis.</p>
-            <br />
-            <div className="agent-chat-container" ref={scrollRef}>
-              {messages.length === 0 ? (
-                <div className="text-center py-12 opacity-70">
-                  <p>Send a message or upload a file to start.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                      style={{ animation: "fadein 0.25s ease" }}
-                    >
-                      <div className={`message ${message.role}`}>
-                        {message.media && (
-                          <div className="mb-2">
-                            {message.media.type === "image" && (
-                              <img src={message.media.url} alt="Uploaded" className="rounded-lg max-w-full h-auto" />
-                            )}
-                            {message.media.type === "video" && (
-                              <video src={message.media.url} controls className="rounded-lg max-w-full" />
-                            )}
+            <div className="superagent-container">
+              {/* LEFT CHAT PANEL */}
+              <div className="sa-left" ref={scrollRef}>
+                {messages.length === 0 ? (
+                  <div className="text-center py-12 opacity-70">
+                    <p>Send a message or upload files to start.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {messages.map((message, index) => (
+                      <div key={index} style={{ animation: "fadein 0.25s ease" }}>
+                        <div className={`chat-msg ${message.role === "user" ? "user-msg" : "ai-msg"}`}>
+                          {message.media && (
+                            <div className="mb-2">
+                              {message.media.type === "image" && (
+                                <img src={message.media.url} alt="Uploaded" className="media-thumb" />
+                              )}
+                              {message.media.type === "video" && (
+                                <video src={message.media.url} controls className="media-thumb" />
+                              )}
+                            </div>
+                          )}
+                          <div dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br>') }} />
+                        </div>
+                        
+                        {message.steps && message.steps.length > 0 && (
+                          <div className="mb-4">
+                            {message.steps.map((step, i) => (
+                              <div key={i} className="step-card">
+                                <strong>Step {i + 1}:</strong> {step}
+                              </div>
+                            ))}
                           </div>
                         )}
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                        <p className="text-xs mt-1 opacity-70">
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
+                        
+                        {message.tools && message.tools.length > 0 && (
+                          <div className="mb-4">
+                            {message.tools.map((tool, i) => (
+                              <div key={i} className="tool-card">
+                                <strong>Tool:</strong> {tool}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {message.warnings && message.warnings.length > 0 && (
+                          <div className="mb-4">
+                            {message.warnings.map((warning, i) => (
+                              <div key={i} className="warning-card">
+                                <strong>⚠ Warning:</strong> {warning}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="message ai">Thinking...</div>
-                    </div>
-                  )}
+                    ))}
+                    {isLoading && (
+                      <div className="chat-msg ai-msg">Analyzing...</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT TOOL PANEL */}
+              <div className="sa-right">
+                {/* File Preview Area */}
+                {mediaPreview && (
+                  <div className="preview-box mb-4 relative">
+                    <button
+                      onClick={removePreview}
+                      className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                    >
+                      Remove
+                    </button>
+                    {mediaPreview.type === "image" && (
+                      <img src={mediaPreview.url} alt="Preview" className="media-thumb" />
+                    )}
+                    {mediaPreview.type === "video" && (
+                      <video src={mediaPreview.url} controls className="media-thumb" />
+                    )}
+                    <strong className="block mt-2 text-sm">{mediaPreview.file.name}</strong>
+                  </div>
+                )}
+
+                {/* Upload Buttons */}
+                <div className="sa-upload-row mb-4">
+                  <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, "image")} className="hidden" />
+                  <div className="sa-upload-btn" onClick={() => imageInputRef.current?.click()}>📷</div>
+                  
+                  <input ref={videoInputRef} type="file" accept="video/*" onChange={(e) => handleFileChange(e, "video")} className="hidden" />
+                  <div className="sa-upload-btn" onClick={() => videoInputRef.current?.click()}>🎥</div>
+                  
+                  <input ref={audioInputRef} type="file" accept="audio/*" onChange={(e) => handleFileChange(e, "audio")} className="hidden" />
+                  <div className="sa-upload-btn" onClick={() => audioInputRef.current?.click()}>🎤</div>
+                  
+                  <input ref={fileInputRef} type="file" accept=".pdf,.txt,*" onChange={(e) => handleFileChange(e, "file")} className="hidden" />
+                  <div className="sa-upload-btn" onClick={() => fileInputRef.current?.click()}>📄</div>
                 </div>
-              )}
-            </div>
-            <br />
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Describe the issue or upload a file..."
-              className="w-full h-24 rounded-lg p-3 border border-white/10 resize-none"
-              style={{ background: 'rgba(255,255,255,0.05)' }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-            />
-            <div className="flex gap-2 mt-3">
-              <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, "image")} className="hidden" />
-              <button onClick={() => imageInputRef.current?.click()} className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5">
-                📷 Image
-              </button>
-              <input ref={videoInputRef} type="file" accept="video/*" onChange={(e) => handleFileChange(e, "video")} className="hidden" />
-              <button onClick={() => videoInputRef.current?.click()} className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5">
-                🎥 Video
-              </button>
-              <button
-                onClick={handleSendMessage}
-                disabled={(!input.trim() && !mediaPreview) || isLoading}
-                className="send-button ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send to FIX-ISH
-              </button>
+
+                {/* Text Input */}
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Describe the issue or attach files..."
+                  className="sa-text mb-3"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+
+                {/* Send Button */}
+                <div
+                  className={`sa-send ${(!input.trim() && !mediaPreview) || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleSendMessage}
+                >
+                  {isLoading ? "Analyzing..." : "Send to FIX-ISH"}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -424,10 +497,108 @@ export default function SuperAgent() {
         }
 
         .step-card {
-          background: rgba(0, 110, 255, 0.08);
-          padding: 16px;
+          background: #E6F2FF;
+          border-left: 4px solid #2A6DF1;
+          padding: 12px 15px;
+          border-radius: 10px;
+          margin-bottom: 12px;
+        }
+
+        .tool-card {
+          background: #FFF9D9;
+          border-left: 4px solid #D5A200;
+          padding: 12px;
+          border-radius: 10px;
+          margin-bottom: 12px;
+        }
+
+        .warning-card {
+          background: #FFE4E6;
+          border-left: 4px solid #E11D48;
+          padding: 12px;
+          border-radius: 10px;
+          margin-bottom: 12px;
+        }
+
+        .superagent-container {
+          display: flex;
+          height: 100%;
+          width: 100%;
+          gap: 20px;
+        }
+
+        .sa-left {
+          flex: 1;
+          padding-right: 10px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .sa-right {
+          width: 360px;
+          border-left: 1px solid #E2E8F0;
+          padding-left: 16px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chat-msg {
+          max-width: 80%;
+          margin-bottom: 18px;
+          padding: 12px 15px;
           border-radius: 12px;
+          font-size: 15px;
+          line-height: 1.45;
+        }
+
+        .user-msg {
+          align-self: flex-end;
+          background: #DCEBFF;
+        }
+
+        .ai-msg {
+          align-self: flex-start;
+          background: #EDF2F7;
+        }
+
+        .media-thumb {
+          width: 180px;
+          border-radius: 8px;
           margin-bottom: 10px;
+        }
+
+        .preview-box {
+          padding: 10px;
+          border-radius: 10px;
+          background: #F1F5F9;
+        }
+
+        .sa-text {
+          height: 120px;
+          border-radius: 10px;
+          padding: 12px;
+          resize: none;
+          border: 1px solid #CBD5E1;
+          width: 100%;
+        }
+
+        .sa-upload-row {
+          display: flex;
+          gap: 10px;
+        }
+
+        .sa-upload-btn {
+          padding: 10px;
+          background: #E2E8F0;
+          border-radius: 8px;
+          cursor: pointer;
+          width: 40px;
+          text-align: center;
+        }
+
+        .sa-upload-btn:hover {
+          background: #CBD5E1;
         }
 
         .message {
