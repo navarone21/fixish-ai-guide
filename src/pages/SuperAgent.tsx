@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Send, Image as ImageIcon, Video, Mic, Paperclip, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+
+type ModuleType = 'home' | 'agent' | 'live' | 'steps' | 'mesh' | 'scene' | 'diagnostics' | 'task' | 'history' | 'settings';
 
 interface Message {
   role: "user" | "assistant";
@@ -17,12 +18,15 @@ interface Message {
 export default function SuperAgent() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeModule, setActiveModule] = useState<ModuleType>('home');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ type: string; url: string; file: File } | null>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +37,25 @@ export default function SuperAgent() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const startLiveMode = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      toast({
+        title: "Camera Error",
+        description: "Could not access camera. Please check permissions.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim() && !mediaPreview) return;
@@ -111,256 +134,300 @@ export default function SuperAgent() {
   };
 
   return (
-    <div className="superagent-container">
-      {/* Header */}
-      <header className="sa-header">
-        <button
-          onClick={() => navigate("/")}
-          className="sa-back-button"
-        >
-          ← Back
-        </button>
-        <span>Fix-ISH Super Agent</span>
-        <div className="text-sm opacity-80">AI Status: Ready</div>
-      </header>
-
-      {/* Main Layout */}
-      <div className="sa-main">
-        {/* Left - Conversation Panel */}
-        <div className="sa-chat-panel" ref={scrollRef}>
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <div className="w-16 h-16 rounded-full bg-[hsl(var(--primary)/0.1)] flex items-center justify-center mb-4">
-                <Mic className="w-8 h-8 text-[hsl(var(--primary))]" />
-              </div>
-              <h2 className="text-xl font-medium mb-2">Ready to Help</h2>
-              <p className="opacity-70 max-w-md">
-                Send a message, upload an image, or record audio to get started with your repair assistance.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                  style={{ animation: "fadein 0.25s ease" }}
-                >
-                  <div className={`message ${message.role}`}>
-                    {message.media && (
-                      <div className="mb-2">
-                        {message.media.type === "image" && (
-                          <img src={message.media.url} alt="Uploaded" className="rounded-lg max-w-full h-auto" />
-                        )}
-                        {message.media.type === "video" && (
-                          <video src={message.media.url} controls className="rounded-lg max-w-full" />
-                        )}
-                        {message.media.type === "audio" && (
-                          <audio src={message.media.url} controls className="w-full" />
-                        )}
-                        {message.media.type === "file" && (
-                          <div className="flex items-center gap-2 p-2 bg-black/5 rounded">
-                            <Paperclip className="w-4 h-4" />
-                            <span className="text-sm">{message.media.name}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70">
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex justify-start" style={{ animation: "fadein 0.25s ease" }}>
-                  <div className="message ai">
-                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#2A6DF1" }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+    <div className={`fixish-os ${theme}-mode`}>
+      {/* SIDEBAR */}
+      <div className="os-sidebar">
+        <h2>Fix-ISH OS</h2>
+        
+        <div className={`os-nav-btn ${activeModule === 'home' ? 'active' : ''}`} onClick={() => setActiveModule('home')}>
+          🏠 Home
         </div>
-
-        {/* Right - Input Panel */}
-        <div className="sa-input-panel">
-          <div className="flex-1 flex flex-col justify-end">
-            {/* Media Preview */}
-            {mediaPreview && (
-              <div className="upload-preview mb-4 relative">
-                <button
-                  onClick={removePreview}
-                  className="absolute top-2 right-2 z-10 px-3 py-1 bg-black/50 hover:bg-black/70 rounded text-white text-sm"
-                >
-                  Remove
-                </button>
-                {mediaPreview.type === "image" && (
-                  <img src={mediaPreview.url} alt="Preview" className="rounded-lg max-h-60 mx-auto" />
-                )}
-                {mediaPreview.type === "video" && (
-                  <video src={mediaPreview.url} controls className="rounded-lg max-h-60 mx-auto" />
-                )}
-                {mediaPreview.type === "audio" && (
-                  <audio src={mediaPreview.url} controls className="w-full" />
-                )}
-                {mediaPreview.type === "file" && (
-                  <div className="flex items-center gap-3 p-4">
-                    <Paperclip className="w-6 h-6" style={{ color: "#2A6DF1" }} />
-                    <span className="text-sm font-medium">{mediaPreview.file.name}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Input Area */}
-            <div className="space-y-4">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Describe the issue or upload a file..."
-                className="w-full h-[120px] rounded-lg p-3 bg-white/5 border border-white/10 resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-              />
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex gap-2">
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, "image")}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
-                    title="Upload Image"
-                  >
-                    <ImageIcon className="w-5 h-5" />
-                  </button>
-
-                  <input
-                    ref={videoInputRef}
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => handleFileChange(e, "video")}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => videoInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
-                    title="Upload Video"
-                  >
-                    <Video className="w-5 h-5" />
-                  </button>
-
-                  <input
-                    ref={audioInputRef}
-                    type="file"
-                    accept="audio/*"
-                    onChange={(e) => handleFileChange(e, "audio")}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => audioInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
-                    title="Upload Audio"
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.txt,*"
-                    onChange={(e) => handleFileChange(e, "file")}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
-                    title="Upload File"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleSendMessage}
-                  disabled={(!input.trim() && !mediaPreview) || isLoading}
-                  className="send-button disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin inline" />
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5 inline mr-2" />
-                      Send to FIX-ISH
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs opacity-60 text-center">
-                Press Enter to send • Shift + Enter for new line
-              </p>
-            </div>
-          </div>
+        <div className={`os-nav-btn ${activeModule === 'agent' ? 'active' : ''}`} onClick={() => setActiveModule('agent')}>
+          🤖 Super Agent
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'live' ? 'active' : ''}`} onClick={() => setActiveModule('live')}>
+          📹 Live AI Repair
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'steps' ? 'active' : ''}`} onClick={() => setActiveModule('steps')}>
+          📝 Steps Library
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'mesh' ? 'active' : ''}`} onClick={() => setActiveModule('mesh')}>
+          🧩 3D Mesh Viewer
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'scene' ? 'active' : ''}`} onClick={() => setActiveModule('scene')}>
+          🌐 Scene Graph
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'diagnostics' ? 'active' : ''}`} onClick={() => setActiveModule('diagnostics')}>
+          ⚠️ Diagnostics
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'task' ? 'active' : ''}`} onClick={() => setActiveModule('task')}>
+          🔗 Task Graph
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'history' ? 'active' : ''}`} onClick={() => setActiveModule('history')}>
+          📚 Project History
+        </div>
+        <div className={`os-nav-btn ${activeModule === 'settings' ? 'active' : ''}`} onClick={() => setActiveModule('settings')}>
+          ⚙️ Settings
         </div>
       </div>
 
+      {/* MAIN PANEL */}
+      <div className="os-main">
+        {/* HOME MODULE */}
+        {activeModule === 'home' && (
+          <div className="module">
+            <h1>Welcome to Fix-ISH OS</h1>
+            <p>Your full AI-powered repair operating system.</p>
+            <br />
+            <h3>Quick Start</h3>
+            <div className="step-card">Start a new repair with the Super Agent</div>
+            <div className="step-card">Upload a photo or video in the Agent tab</div>
+            <div className="step-card">Use Live Mode for real-time guidance</div>
+            <br />
+            <h3>Recent Projects</h3>
+            <div id="recent-projects" className="text-sm opacity-70">No recent projects</div>
+          </div>
+        )}
+
+        {/* SUPER AGENT MODULE */}
+        {activeModule === 'agent' && (
+          <div className="module">
+            <h1>Super Agent</h1>
+            <p>Full multimodal chat + analysis.</p>
+            <br />
+            <div className="agent-chat-container" ref={scrollRef}>
+              {messages.length === 0 ? (
+                <div className="text-center py-12 opacity-70">
+                  <p>Send a message or upload a file to start.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      style={{ animation: "fadein 0.25s ease" }}
+                    >
+                      <div className={`message ${message.role}`}>
+                        {message.media && (
+                          <div className="mb-2">
+                            {message.media.type === "image" && (
+                              <img src={message.media.url} alt="Uploaded" className="rounded-lg max-w-full h-auto" />
+                            )}
+                            {message.media.type === "video" && (
+                              <video src={message.media.url} controls className="rounded-lg max-w-full" />
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-xs mt-1 opacity-70">
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="message ai">Thinking...</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <br />
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Describe the issue or upload a file..."
+              className="w-full h-24 rounded-lg p-3 border border-white/10 resize-none"
+              style={{ background: 'rgba(255,255,255,0.05)' }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+            />
+            <div className="flex gap-2 mt-3">
+              <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, "image")} className="hidden" />
+              <button onClick={() => imageInputRef.current?.click()} className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5">
+                📷 Image
+              </button>
+              <input ref={videoInputRef} type="file" accept="video/*" onChange={(e) => handleFileChange(e, "video")} className="hidden" />
+              <button onClick={() => videoInputRef.current?.click()} className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5">
+                🎥 Video
+              </button>
+              <button
+                onClick={handleSendMessage}
+                disabled={(!input.trim() && !mediaPreview) || isLoading}
+                className="send-button ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send to FIX-ISH
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* LIVE AI REPAIR MODULE */}
+        {activeModule === 'live' && (
+          <div className="module">
+            <h1>Live AI Repair</h1>
+            <video ref={videoRef} autoPlay className="live-video" />
+            <div id="ar-container" className="ar-container"></div>
+            <button onClick={startLiveMode} className="mt-4 px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+              Start Live Mode
+            </button>
+          </div>
+        )}
+
+        {/* STEPS LIBRARY MODULE */}
+        {activeModule === 'steps' && (
+          <div className="module">
+            <h1>Steps Library</h1>
+            <div id="steps-list" className="text-sm opacity-70">No steps available</div>
+          </div>
+        )}
+
+        {/* MESH VIEWER MODULE */}
+        {activeModule === 'mesh' && (
+          <div className="module">
+            <h1>3D Mesh Viewer</h1>
+            <canvas id="mesh-canvas" className="mesh-canvas"></canvas>
+          </div>
+        )}
+
+        {/* SCENE GRAPH MODULE */}
+        {activeModule === 'scene' && (
+          <div className="module">
+            <h1>Scene Graph</h1>
+            <div id="scene-tree" className="text-sm opacity-70">No scene data available</div>
+          </div>
+        )}
+
+        {/* DIAGNOSTICS MODULE */}
+        {activeModule === 'diagnostics' && (
+          <div className="module">
+            <h1>Diagnostics</h1>
+            <div id="diagnostics-panel" className="text-sm opacity-70">System status: Normal</div>
+          </div>
+        )}
+
+        {/* TASK GRAPH MODULE */}
+        {activeModule === 'task' && (
+          <div className="module">
+            <h1>Task Graph</h1>
+            <div id="task-graph-container" className="text-sm opacity-70">No active tasks</div>
+          </div>
+        )}
+
+        {/* HISTORY MODULE */}
+        {activeModule === 'history' && (
+          <div className="module">
+            <h1>Project History</h1>
+            <div id="history-list" className="text-sm opacity-70">No history available</div>
+          </div>
+        )}
+
+        {/* SETTINGS MODULE */}
+        {activeModule === 'settings' && (
+          <div className="module">
+            <h1>Settings</h1>
+            <button onClick={toggleTheme} className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+              Toggle Light/Dark Mode
+            </button>
+            <br /><br />
+            <button onClick={() => navigate("/")} className="px-6 py-3 rounded-lg border border-white/10 hover:bg-white/5">
+              ← Back to Landing Page
+            </button>
+          </div>
+        )}
+      </div>
+
       <style>{`
-        .superagent-container {
+        .fixish-os {
           display: flex;
-          flex-direction: column;
           height: 100vh;
           width: 100%;
-          background: hsl(var(--background));
-          color: hsl(var(--foreground));
-        }
-
-        .sa-header {
-          padding: 18px 24px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 20px;
-          font-weight: 700;
-          border-bottom: 1px solid hsl(var(--border));
-        }
-
-        .sa-back-button {
-          cursor: pointer;
-          font-size: 15px;
-          opacity: 0.8;
-          background: none;
-          border: none;
-          color: inherit;
-        }
-
-        .sa-main {
-          display: flex;
-          flex: 1;
           overflow: hidden;
         }
 
-        .sa-chat-panel {
-          flex: 0 0 70%;
-          padding: 20px;
+        .light-mode {
+          background: #FFFFFF;
+          color: #0B0F19;
+        }
+
+        .dark-mode {
+          background: #0B0F19;
+          color: #F5F8FF;
+        }
+
+        .os-sidebar {
+          width: 260px;
+          padding: 18px;
+          border-right: 1px solid rgba(0,0,0,0.1);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .light-mode .os-sidebar {
+          background: #F5F7FA;
+        }
+
+        .dark-mode .os-sidebar {
+          background: #111623;
+          border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .os-sidebar h2 {
+          font-size: 20px;
+          margin-bottom: 24px;
+          font-weight: 700;
+        }
+
+        .os-nav-btn {
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 8px;
+          cursor: pointer;
+          font-size: 15px;
+        }
+
+        .os-nav-btn:hover {
+          background: rgba(0,0,0,0.05);
+        }
+
+        .dark-mode .os-nav-btn:hover {
+          background: rgba(255,255,255,0.08);
+        }
+
+        .os-nav-btn.active {
+          background: #2A6DF1;
+          color: white;
+        }
+
+        .os-main {
+          flex: 1;
+          padding: 24px;
           overflow-y: auto;
+        }
+
+        .light-mode .os-main {
+          background: #FFFFFF;
+        }
+
+        .dark-mode .os-main {
+          background: #161B26;
+        }
+
+        .module {
+          display: block;
+        }
+
+        .step-card {
+          background: rgba(0, 110, 255, 0.08);
+          padding: 16px;
+          border-radius: 12px;
+          margin-bottom: 10px;
         }
 
         .message {
@@ -371,28 +438,24 @@ export default function SuperAgent() {
           line-height: 1.4;
         }
 
-        .message.user {
-          background: hsl(var(--primary) / 0.15);
-          margin-left: auto;
+        .light-mode .message.user {
+          background: #E8F0FF;
+          color: #0B0F19;
         }
 
-        .message.ai {
-          background: hsl(var(--muted));
-          margin-right: auto;
+        .dark-mode .message.user {
+          background: #1F2A3C;
+          color: #F5F8FF;
         }
 
-        .sa-input-panel {
-          flex: 0 0 30%;
-          border-left: 1px solid hsl(var(--border));
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
+        .light-mode .message.ai {
+          background: #DDEBFF;
+          color: #0B0F19;
         }
 
-        .upload-preview {
-          background: hsl(var(--muted) / 0.5);
-          padding: 10px;
-          border-radius: 10px;
+        .dark-mode .message.ai {
+          background: #2A3547;
+          color: #F5F8FF;
         }
 
         .send-button {
@@ -404,8 +467,33 @@ export default function SuperAgent() {
           cursor: pointer;
           font-weight: 600;
           border: none;
-          width: auto;
-          min-width: 180px;
+        }
+
+        .live-video {
+          width: 100%;
+          border-radius: 10px;
+          background: #000;
+          max-height: 400px;
+        }
+
+        .ar-container {
+          width: 100%;
+          height: 400px;
+          background: #000000;
+          border-radius: 10px;
+          margin-top: 16px;
+        }
+
+        .mesh-canvas {
+          width: 100%;
+          height: 400px;
+          border-radius: 10px;
+          background: #0D0D14;
+        }
+
+        .agent-chat-container {
+          max-height: 500px;
+          overflow-y: auto;
         }
 
         @keyframes fadein {
@@ -414,16 +502,13 @@ export default function SuperAgent() {
         }
 
         @media (max-width: 768px) {
-          .sa-main {
+          .fixish-os {
             flex-direction: column;
           }
-          .sa-chat-panel {
-            flex: 1;
-          }
-          .sa-input-panel {
-            flex: 0 0 auto;
-            border-left: none;
-            border-top: 1px solid hsl(var(--border));
+          .os-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
           }
         }
       `}</style>
