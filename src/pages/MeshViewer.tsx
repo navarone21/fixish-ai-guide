@@ -4,6 +4,7 @@ import { MeshEngine } from "@/lib/meshEngine";
 import { useFixish } from "@/contexts/FixishProvider";
 import MainNav from "@/components/MainNav";
 import { Button } from "@/components/ui/button";
+import "@/styles/fixish.css";
 
 export default function MeshViewerPage() {
   // LABEL D — FIXISH State + Refs
