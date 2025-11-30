@@ -966,16 +966,16 @@ export default function SuperAgent() {
         }
 
         .setting-card {
-          background: rgba(0, 110, 255, 0.04);
-          padding: 20px;
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(0, 110, 255, 0.1);
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          padding: 16px;
+          border-radius: 10px;
+          margin-bottom: 12px;
         }
 
         .dark-mode .setting-card {
-          background: rgba(0, 110, 255, 0.08);
-          border: 1px solid rgba(0, 110, 255, 0.2);
+          background: #1D2433;
+          border: 1px solid #394457;
         }
 
         .message {
