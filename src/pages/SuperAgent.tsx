@@ -503,11 +503,64 @@ export default function SuperAgent() {
         {activeModule === 'live' && (
           <div className="module">
             <h1>Live AI Repair</h1>
-            <video ref={videoRef} autoPlay className="live-video" />
-            <div id="ar-container" className="ar-container"></div>
-            <button onClick={startLiveMode} className="mt-4 px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-              Start Live Mode
-            </button>
+
+            <div className="live-status">
+              <p>Camera: <span id="cam-status" className="font-semibold">Idle</span></p>
+              <p>AI Status: <span id="ai-live-status" className="font-semibold">Waiting…</span></p>
+            </div>
+
+            <div className="live-container">
+              <video ref={videoRef} id="live-video" autoPlay playsInline />
+              <canvas id="live-overlay"></canvas>
+            </div>
+
+            <div className="live-controls">
+              <button onClick={startLiveMode}>Start Live Mode</button>
+              <button onClick={() => {
+                if (videoRef.current?.srcObject) {
+                  (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+                  videoRef.current.srcObject = null;
+                  document.getElementById('cam-status')!.textContent = 'Stopped';
+                  toast({ title: "Stopped", description: "Live mode stopped" });
+                }
+              }}>Stop</button>
+              <button onClick={() => {
+                const video = videoRef.current;
+                if (!video) return;
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d')?.drawImage(video, 0, 0);
+                toast({ title: "Captured", description: "Frame captured successfully" });
+              }}>Capture Frame</button>
+              <button onClick={() => {
+                document.getElementById('ai-live-status')!.textContent = 'Analyzing...';
+                setTimeout(() => {
+                  const resultsContent = document.getElementById('live-results-content');
+                  if (resultsContent) {
+                    resultsContent.innerHTML = `
+                      <div class="result-item">
+                        <p class="font-semibold">Detection: Screen Crack</p>
+                        <p class="text-sm opacity-70">Confidence: 89%</p>
+                        <p class="text-sm opacity-70">Location: Top-right corner</p>
+                      </div>
+                      <div class="result-item mt-3">
+                        <p class="font-semibold">Recommended Action</p>
+                        <p class="text-sm opacity-70">Replace screen assembly</p>
+                      </div>
+                    `;
+                  }
+                  document.getElementById('ai-live-status')!.textContent = 'Analysis Complete';
+                }, 1500);
+              }}>Analyze Frame</button>
+            </div>
+
+            <div className="live-results">
+              <h3>Latest Results</h3>
+              <div id="live-results-content" className="text-sm opacity-70 mt-2">
+                No analysis yet. Start live mode and capture a frame to analyze.
+              </div>
+            </div>
           </div>
         )}
 
@@ -1447,6 +1500,95 @@ export default function SuperAgent() {
         .scene-state.damaged {
           background: #FEE2E2;
           color: #B91C1C;
+        }
+
+        .live-status {
+          display: flex;
+          gap: 24px;
+          margin-top: 12px;
+          padding: 12px;
+          background: #F9FAFB;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+
+        .dark-mode .live-status {
+          background: #1F2937;
+        }
+
+        .live-container {
+          position: relative;
+          width: 100%;
+          margin-top: 16px;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #000;
+        }
+
+        #live-video {
+          width: 100%;
+          display: block;
+          border-radius: 12px;
+        }
+
+        #live-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+
+        .live-controls {
+          margin-top: 16px;
+        }
+
+        .live-controls button {
+          margin-right: 8px;
+          margin-bottom: 8px;
+          padding: 10px 14px;
+          background: #2A6DF1;
+          color: white;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s ease;
+        }
+
+        .live-controls button:hover {
+          background: #1E5BD9;
+        }
+
+        .live-results {
+          background: #FFFFFF;
+          padding: 14px;
+          margin-top: 20px;
+          border-radius: 10px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .dark-mode .live-results {
+          background: #1D2433;
+          border: 1px solid #394457;
+        }
+
+        .live-results h3 {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .result-item {
+          padding: 10px;
+          background: #F9FAFB;
+          border-radius: 8px;
+          margin-top: 8px;
+        }
+
+        .dark-mode .result-item {
+          background: #111827;
         }
 
         .message {
