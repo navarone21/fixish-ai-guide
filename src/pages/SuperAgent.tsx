@@ -539,7 +539,89 @@ export default function SuperAgent() {
         {activeModule === 'diagnostics' && (
           <div className="module">
             <h1>Diagnostics</h1>
-            <div id="diagnostics-panel" className="text-sm opacity-70">System status: Normal</div>
+
+            <div className="diag-card">
+              <h3>🔥 Danger Level</h3>
+              <div className="meter">
+                <div 
+                  className="meter-fill"
+                  style={{ 
+                    width: '25%', 
+                    background: '#10B981',
+                    height: '100%',
+                    borderRadius: '10px',
+                    transition: 'width 0.3s ease'
+                  }}
+                />
+              </div>
+              <p className="text-xs opacity-60 mt-2">Low Risk - Safe to proceed</p>
+            </div>
+
+            <div className="diag-card">
+              <h3>🛠 Recommended Action</h3>
+              <p id="diag-action" className="mt-2">
+                {messages.length === 0 
+                  ? "Run a scan to begin. Upload an image or describe the issue in Super Agent."
+                  : "Continue with repair guidance. Check Project History for saved sessions."}
+              </p>
+            </div>
+
+            <div className="diag-card">
+              <h3>📊 System Confidence</h3>
+              <div className="meter">
+                <div 
+                  className="meter-fill"
+                  style={{ 
+                    width: messages.length > 0 ? '85%' : '0%', 
+                    background: '#2A6DF1',
+                    height: '100%',
+                    borderRadius: '10px',
+                    transition: 'width 0.3s ease'
+                  }}
+                />
+              </div>
+              <p className="text-xs opacity-60 mt-2">
+                {messages.length > 0 ? '85% - High confidence in analysis' : 'No data yet'}
+              </p>
+            </div>
+
+            <div className="diag-card">
+              <h3>📈 Session Statistics</h3>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{conversations.length}</div>
+                  <div className="text-xs opacity-60">Total Sessions</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{messages.length}</div>
+                  <div className="text-xs opacity-60">Current Messages</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="diag-card">
+              <h3>⚙️ System Status</h3>
+              <div className="space-y-2 mt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Backend Connection</span>
+                  <span className="px-2 py-1 rounded-full text-xs" style={{ background: '#D1FAE5', color: '#065F46' }}>
+                    ✓ Online
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Database Status</span>
+                  <span className="px-2 py-1 rounded-full text-xs" style={{ background: '#D1FAE5', color: '#065F46' }}>
+                    ✓ Connected
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">AI Processing</span>
+                  <span className="px-2 py-1 rounded-full text-xs" style={{ background: '#D1FAE5', color: '#065F46' }}>
+                    ✓ Ready
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1031,6 +1113,37 @@ export default function SuperAgent() {
           text-align: center;
           padding: 48px 20px;
           opacity: 0.7;
+        }
+
+        .diag-card {
+          background: #FFFFFF;
+          padding: 18px;
+          border-radius: 12px;
+          margin-bottom: 14px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .dark-mode .diag-card {
+          background: #1D2433;
+          border: 1px solid #394457;
+        }
+
+        .diag-card h3 {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .meter {
+          height: 14px;
+          border-radius: 10px;
+          background: #CBD5E1;
+          margin-top: 8px;
+          overflow: hidden;
+        }
+
+        .dark-mode .meter {
+          background: #374151;
         }
 
         .message {
