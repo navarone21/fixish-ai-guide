@@ -303,6 +303,12 @@ export default function SuperAgent() {
     <div className={`fixish-os ${theme}-mode`}>
       {/* SIDEBAR */}
       <div className="os-sidebar">
+        <button 
+          onClick={() => navigate("/")} 
+          className="back-to-landing-btn mb-4"
+        >
+          ← Landing Page
+        </button>
         <h2>Fix-ISH OS</h2>
         
         <div className={`os-nav-btn ${activeModule === 'home' ? 'active' : ''}`} onClick={() => setActiveModule('home')}>
@@ -1169,6 +1175,24 @@ export default function SuperAgent() {
         }
 
         .os-nav-btn.active {
+          background: #2A6DF1;
+          color: white;
+        }
+
+        .back-to-landing-btn {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 8px;
+          border: 1px solid #2A6DF1;
+          background: transparent;
+          color: #2A6DF1;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 600;
+          transition: all 0.2s ease;
+        }
+
+        .back-to-landing-btn:hover {
           background: #2A6DF1;
           color: white;
         }

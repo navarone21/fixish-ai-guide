@@ -101,12 +101,40 @@ const Index = () => {
     <div className="min-h-screen relative bg-background">
       <RepairWorkshopBackground />
       
-      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-        <FeaturesDropdown />
-        <ThemeToggle />
+      {/* Top Navigation Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="text-xl font-bold text-foreground">Fix-ISH</div>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Features
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Feedback
+            </Button>
+            <Button 
+              onClick={() => navigate("/super-agent")}
+              className="shadow-md"
+            >
+              Launch App
+            </Button>
+            <FeaturesDropdown />
+            <ThemeToggle />
+          </div>
+        </div>
+      </div>
+      
+      <div className="fixed top-6 right-6 z-40" style={{ display: 'none' }}>
+        {/* Hidden - moved to nav bar */}
       </div>
 
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
         
         <motion.div
