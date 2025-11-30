@@ -6,6 +6,7 @@ import { MainThemeProvider } from "@/contexts/MainThemeContext";
 import { FixishProvider } from "@/contexts/FixishProvider";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
+import SuperAgent from "./pages/SuperAgent";
 import LiveRepair from "./pages/LiveRepair";
 import Steps from "./pages/Steps";
 import MeshViewer from "./pages/MeshViewer";
@@ -38,6 +39,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/super-agent" element={<SuperAgent />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />

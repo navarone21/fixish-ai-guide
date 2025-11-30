@@ -186,15 +186,7 @@ const Index = () => {
             >
               <Button 
                 size="lg"
-                onClick={async () => {
-                  navigate("/chat");
-                  try {
-                    const { sendChat } = await import("@/lib/api");
-                    await sendChat("Hello Fix-ISH");
-                  } catch (error) {
-                    console.error("Initial connection error:", error);
-                  }
-                }}
+                onClick={() => navigate("/super-agent")}
                 className="shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:shadow-2xl relative overflow-hidden group"
               >
                 <motion.span
