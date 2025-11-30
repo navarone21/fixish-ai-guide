@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type ModuleType = 'home' | 'agent' | 'live' | 'steps' | 'mesh' | 'scene' | 'diagnostics' | 'task' | 'history' | 'settings';
 
@@ -27,6 +28,15 @@ export default function SuperAgent() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ type: string; url: string; file: File } | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [userId] = useState(() => {
+    const stored = localStorage.getItem('fixish_user_id');
+    if (stored) return stored;
+    const newId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('fixish_user_id', newId);
+    return newId;
+  });
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,6 +50,128 @@ export default function SuperAgent() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (activeModule === 'history') {
+      loadConversations();
+    }
+  }, [activeModule]);
+
+  const loadConversations = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('conversations', {
+        body: { action: 'list', userId }
+      });
+
+      if (error) throw error;
+      if (data?.conversations) {
+        setConversations(data.conversations);
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation history",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('conversations', {
+        body: { action: 'get', conversationId, userId }
+      });
+
+      if (error) throw error;
+      if (data?.messages) {
+        const loadedMessages = data.messages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+          media: msg.files?.[0] || undefined
+        }));
+        setMessages(loadedMessages);
+        setCurrentConversationId(conversationId);
+        setActiveModule('agent');
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveConversation = async (newMessages: Message[]) => {
+    try {
+      if (!currentConversationId) {
+        // Create new conversation
+        const { data, error } = await supabase.functions.invoke('conversations', {
+          body: {
+            action: 'create',
+            userId,
+            title: newMessages[0]?.content.substring(0, 50) || 'New Repair Session',
+            messages: newMessages
+          }
+        });
+
+        if (error) throw error;
+        if (data?.conversation) {
+          setCurrentConversationId(data.conversation.id);
+        }
+      } else {
+        // Add message to existing conversation
+        const lastMessage = newMessages[newMessages.length - 1];
+        await supabase.functions.invoke('conversations', {
+          body: {
+            action: 'add_message',
+            conversationId: currentConversationId,
+            userId,
+            message: lastMessage
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
+
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('conversations', {
+        body: { action: 'delete', conversationId, userId }
+      });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Conversation deleted"
+      });
+      
+      loadConversations();
+      if (currentConversationId === conversationId) {
+        setMessages([]);
+        setCurrentConversationId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setActiveModule('agent');
+  };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -83,7 +215,13 @@ export default function SuperAgent() {
       } : undefined
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => {
+      const updated = [...prev, userMessage];
+      if (currentConversationId) {
+        saveConversation(updated);
+      }
+      return updated;
+    });
     const currentInput = input;
     setInput("");
     const currentMedia = mediaPreview;
@@ -128,7 +266,11 @@ export default function SuperAgent() {
         warnings: data.warnings || undefined
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => {
+        const updated = [...prev, assistantMessage];
+        saveConversation(updated);
+        return updated;
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
@@ -216,6 +358,22 @@ export default function SuperAgent() {
         {/* SUPER AGENT MODULE */}
         {activeModule === 'agent' && (
           <div className="module">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h1>Super Agent</h1>
+                {currentConversationId && (
+                  <p className="text-sm opacity-60 mt-1">Active conversation • Auto-saving</p>
+                )}
+              </div>
+              {currentConversationId && (
+                <button
+                  onClick={startNewConversation}
+                  className="px-4 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm"
+                >
+                  + New Chat
+                </button>
+              )}
+            </div>
             <div className="superagent-container">
               {/* LEFT CHAT PANEL */}
               <div className="sa-left" ref={scrollRef}>
@@ -396,8 +554,55 @@ export default function SuperAgent() {
         {/* HISTORY MODULE */}
         {activeModule === 'history' && (
           <div className="module">
-            <h1>Project History</h1>
-            <div id="history-list" className="text-sm opacity-70">No history available</div>
+            <div className="flex justify-between items-center mb-6">
+              <h1>Project History</h1>
+              <button 
+                onClick={startNewConversation}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              >
+                + New Conversation
+              </button>
+            </div>
+            
+            {conversations.length === 0 ? (
+              <div className="text-center py-12 opacity-70">
+                <p>No conversation history yet</p>
+                <p className="text-sm mt-2">Start a conversation in Super Agent to save it</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className="p-4 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition-all"
+                    style={{ background: theme === 'light' ? '#F9FAFB' : '#1F2937' }}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1" onClick={() => loadConversation(conv.id)}>
+                        <h3 className="font-semibold mb-1">{conv.title}</h3>
+                        <p className="text-xs opacity-60">
+                          Last message: {new Date(conv.last_message_at).toLocaleString()}
+                        </p>
+                        <p className="text-xs opacity-60 mt-1">
+                          Created: {new Date(conv.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Delete this conversation?')) {
+                            deleteConversation(conv.id);
+                          }
+                        }}
+                        className="px-3 py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
