@@ -1,10 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Send, Image, Video, Mic, Paperclip, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, Video, Mic, Paperclip, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -115,146 +111,117 @@ export default function SuperAgent() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="superagent-container">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="hover:bg-accent/10"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-light tracking-tight">Fix-ISH Super Agent</h1>
-        </div>
+      <header className="sa-header">
+        <button
+          onClick={() => navigate("/")}
+          className="sa-back-button"
+        >
+          ← Back
+        </button>
+        <span>Fix-ISH Super Agent</span>
+        <div className="text-sm opacity-80">AI Status: Ready</div>
       </header>
 
       {/* Main Layout */}
-      <div className="flex-1 grid md:grid-cols-2 gap-0 overflow-hidden">
+      <div className="sa-main">
         {/* Left - Conversation Panel */}
-        <div className="border-r border-border flex flex-col bg-background">
-          <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-            {messages.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center h-full text-center py-20"
-              >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Mic className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-xl font-medium mb-2">Ready to Help</h2>
-                <p className="text-muted-foreground max-w-md">
-                  Send a message, upload an image, or record audio to get started with your repair assistance.
-                </p>
-              </motion.div>
-            ) : (
-              <div className="space-y-6">
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-sm"
-                          : "bg-card border border-border rounded-bl-sm"
-                      }`}
-                    >
-                      {message.media && (
-                        <div className="mb-2">
-                          {message.media.type === "image" && (
-                            <img src={message.media.url} alt="Uploaded" className="rounded-lg max-w-full h-auto" />
-                          )}
-                          {message.media.type === "video" && (
-                            <video src={message.media.url} controls className="rounded-lg max-w-full" />
-                          )}
-                          {message.media.type === "audio" && (
-                            <audio src={message.media.url} controls className="w-full" />
-                          )}
-                          {message.media.type === "file" && (
-                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                              <Paperclip className="w-4 h-4" />
-                              <span className="text-sm">{message.media.name}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs mt-1 opacity-70">
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-                
-                {isLoading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-start"
-                  >
-                    <div className="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    </div>
-                  </motion.div>
-                )}
+        <div className="sa-chat-panel" ref={scrollRef}>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <div className="w-16 h-16 rounded-full bg-[hsl(var(--primary)/0.1)] flex items-center justify-center mb-4">
+                <Mic className="w-8 h-8 text-[hsl(var(--primary))]" />
               </div>
-            )}
-          </ScrollArea>
+              <h2 className="text-xl font-medium mb-2">Ready to Help</h2>
+              <p className="opacity-70 max-w-md">
+                Send a message, upload an image, or record audio to get started with your repair assistance.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  style={{ animation: "fadein 0.25s ease" }}
+                >
+                  <div className={`message ${message.role}`}>
+                    {message.media && (
+                      <div className="mb-2">
+                        {message.media.type === "image" && (
+                          <img src={message.media.url} alt="Uploaded" className="rounded-lg max-w-full h-auto" />
+                        )}
+                        {message.media.type === "video" && (
+                          <video src={message.media.url} controls className="rounded-lg max-w-full" />
+                        )}
+                        {message.media.type === "audio" && (
+                          <audio src={message.media.url} controls className="w-full" />
+                        )}
+                        {message.media.type === "file" && (
+                          <div className="flex items-center gap-2 p-2 bg-black/5 rounded">
+                            <Paperclip className="w-4 h-4" />
+                            <span className="text-sm">{message.media.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-xs mt-1 opacity-70">
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              
+              {isLoading && (
+                <div className="flex justify-start" style={{ animation: "fadein 0.25s ease" }}>
+                  <div className="message ai">
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#2A6DF1" }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right - Input Panel */}
-        <div className="bg-muted/30 flex flex-col p-6">
+        <div className="sa-input-panel">
           <div className="flex-1 flex flex-col justify-end">
             {/* Media Preview */}
             {mediaPreview && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-4 relative"
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
+              <div className="upload-preview mb-4 relative">
+                <button
                   onClick={removePreview}
-                  className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background"
+                  className="absolute top-2 right-2 z-10 px-3 py-1 bg-black/50 hover:bg-black/70 rounded text-white text-sm"
                 >
                   Remove
-                </Button>
+                </button>
                 {mediaPreview.type === "image" && (
-                  <img src={mediaPreview.url} alt="Preview" className="rounded-lg max-h-60 mx-auto border border-border" />
+                  <img src={mediaPreview.url} alt="Preview" className="rounded-lg max-h-60 mx-auto" />
                 )}
                 {mediaPreview.type === "video" && (
-                  <video src={mediaPreview.url} controls className="rounded-lg max-h-60 mx-auto border border-border" />
+                  <video src={mediaPreview.url} controls className="rounded-lg max-h-60 mx-auto" />
                 )}
                 {mediaPreview.type === "audio" && (
-                  <div className="bg-card border border-border rounded-lg p-4">
-                    <audio src={mediaPreview.url} controls className="w-full" />
-                  </div>
+                  <audio src={mediaPreview.url} controls className="w-full" />
                 )}
                 {mediaPreview.type === "file" && (
-                  <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
-                    <Paperclip className="w-6 h-6 text-primary" />
+                  <div className="flex items-center gap-3 p-4">
+                    <Paperclip className="w-6 h-6" style={{ color: "#2A6DF1" }} />
                     <span className="text-sm font-medium">{mediaPreview.file.name}</span>
                   </div>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* Input Area */}
             <div className="space-y-4">
-              <Textarea
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Describe your repair issue or ask a question..."
-                className="min-h-[120px] resize-none"
+                placeholder="Describe the issue or upload a file..."
+                className="w-full h-[120px] rounded-lg p-3 bg-white/5 border border-white/10 resize-none"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -273,15 +240,14 @@ export default function SuperAgent() {
                     onChange={(e) => handleFileChange(e, "image")}
                     className="hidden"
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => imageInputRef.current?.click()}
                     disabled={isLoading}
-                    className="hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
+                    title="Upload Image"
                   >
-                    <Image className="w-5 h-5" />
-                  </Button>
+                    <ImageIcon className="w-5 h-5" />
+                  </button>
 
                   <input
                     ref={videoInputRef}
@@ -290,15 +256,14 @@ export default function SuperAgent() {
                     onChange={(e) => handleFileChange(e, "video")}
                     className="hidden"
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => videoInputRef.current?.click()}
                     disabled={isLoading}
-                    className="hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
+                    title="Upload Video"
                   >
                     <Video className="w-5 h-5" />
-                  </Button>
+                  </button>
 
                   <input
                     ref={audioInputRef}
@@ -307,56 +272,161 @@ export default function SuperAgent() {
                     onChange={(e) => handleFileChange(e, "audio")}
                     className="hidden"
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => audioInputRef.current?.click()}
                     disabled={isLoading}
-                    className="hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
+                    title="Upload Audio"
                   >
                     <Mic className="w-5 h-5" />
-                  </Button>
+                  </button>
 
                   <input
                     ref={fileInputRef}
                     type="file"
+                    accept=".pdf,.txt,*"
                     onChange={(e) => handleFileChange(e, "file")}
                     className="hidden"
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
+                  <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading}
-                    className="hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                    className="p-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50"
+                    title="Upload File"
                   >
                     <Paperclip className="w-5 h-5" />
-                  </Button>
+                  </button>
                 </div>
 
-                <Button
+                <button
                   onClick={handleSendMessage}
                   disabled={(!input.trim() && !mediaPreview) || isLoading}
-                  className="shadow-glow"
+                  className="send-button disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin inline" />
                   ) : (
                     <>
-                      <Send className="w-5 h-5 mr-2" />
-                      Send
+                      <Send className="w-5 h-5 inline mr-2" />
+                      Send to FIX-ISH
                     </>
                   )}
-                </Button>
+                </button>
               </div>
 
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="text-xs opacity-60 text-center">
                 Press Enter to send • Shift + Enter for new line
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        .superagent-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          width: 100%;
+          background: hsl(var(--background));
+          color: hsl(var(--foreground));
+        }
+
+        .sa-header {
+          padding: 18px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 20px;
+          font-weight: 700;
+          border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .sa-back-button {
+          cursor: pointer;
+          font-size: 15px;
+          opacity: 0.8;
+          background: none;
+          border: none;
+          color: inherit;
+        }
+
+        .sa-main {
+          display: flex;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        .sa-chat-panel {
+          flex: 0 0 70%;
+          padding: 20px;
+          overflow-y: auto;
+        }
+
+        .message {
+          max-width: 80%;
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin-bottom: 14px;
+          line-height: 1.4;
+        }
+
+        .message.user {
+          background: hsl(var(--primary) / 0.15);
+          margin-left: auto;
+        }
+
+        .message.ai {
+          background: hsl(var(--muted));
+          margin-right: auto;
+        }
+
+        .sa-input-panel {
+          flex: 0 0 30%;
+          border-left: 1px solid hsl(var(--border));
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .upload-preview {
+          background: hsl(var(--muted) / 0.5);
+          padding: 10px;
+          border-radius: 10px;
+        }
+
+        .send-button {
+          padding: 14px 20px;
+          border-radius: 10px;
+          background: #2A6DF1;
+          text-align: center;
+          color: white;
+          cursor: pointer;
+          font-weight: 600;
+          border: none;
+          width: auto;
+          min-width: 180px;
+        }
+
+        @keyframes fadein {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+          .sa-main {
+            flex-direction: column;
+          }
+          .sa-chat-panel {
+            flex: 1;
+          }
+          .sa-input-panel {
+            flex: 0 0 auto;
+            border-left: none;
+            border-top: 1px solid hsl(var(--border));
+          }
+        }
+      `}</style>
     </div>
   );
 }
