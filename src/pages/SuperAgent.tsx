@@ -636,7 +636,74 @@ export default function SuperAgent() {
         {activeModule === 'scene' && (
           <div className="module">
             <h1>Scene Graph</h1>
-            <div id="scene-tree" className="text-sm opacity-70">No scene data available</div>
+            <p className="text-sm opacity-70 mb-4">Hierarchical view of detected components and their status</p>
+
+            <div id="scene-tree" className="scene-tree">
+              <div className="scene-node root">
+                📦 Device
+                <div className="scene-children">
+
+                  <div className="scene-node">
+                    🔋 Battery
+                    <span className="scene-state ok">OK</span>
+                  </div>
+
+                  <div className="scene-node">
+                    📺 Screen
+                    <span className="scene-state damaged">Cracked</span>
+                  </div>
+
+                  <div className="scene-node">
+                    🔌 Charging Port
+                    <span className="scene-state warn">Loose</span>
+                  </div>
+
+                  <div className="scene-node">
+                    🧠 Logic Board
+                    <span className="scene-state ok">OK</span>
+                    <div className="scene-children">
+                      <div className="scene-node">
+                        💾 Memory
+                        <span className="scene-state ok">OK</span>
+                      </div>
+                      <div className="scene-node">
+                        🔥 CPU
+                        <span className="scene-state warn">Overheating</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="scene-node">
+                    🔊 Speakers
+                    <span className="scene-state ok">OK</span>
+                  </div>
+
+                  <div className="scene-node">
+                    📷 Camera
+                    <span className="scene-state damaged">Lens Damaged</span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg border border-blue-200 bg-blue-50 text-sm">
+              <p className="font-semibold text-blue-800">ℹ️ Scene Graph Status:</p>
+              <div className="grid grid-cols-3 gap-3 mt-3">
+                <div>
+                  <span className="scene-state ok">OK</span>
+                  <p className="text-blue-700 text-xs mt-1">3 components</p>
+                </div>
+                <div>
+                  <span className="scene-state warn">Warning</span>
+                  <p className="text-blue-700 text-xs mt-1">2 components</p>
+                </div>
+                <div>
+                  <span className="scene-state damaged">Damaged</span>
+                  <p className="text-blue-700 text-xs mt-1">2 components</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1332,6 +1399,54 @@ export default function SuperAgent() {
           .mesh-info {
             width: 100%;
           }
+        }
+
+        .scene-tree {
+          margin-top: 16px;
+          padding-left: 10px;
+          border-left: 2px solid #CBD5E1;
+        }
+
+        .dark-mode .scene-tree {
+          border-left-color: #4B5563;
+        }
+
+        .scene-node {
+          padding: 8px 0;
+          font-size: 15px;
+        }
+
+        .scene-node.root {
+          font-weight: 600;
+          font-size: 16px;
+        }
+
+        .scene-children {
+          padding-left: 20px;
+        }
+
+        .scene-state {
+          margin-left: 8px;
+          padding: 4px 6px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          display: inline-block;
+        }
+
+        .scene-state.ok {
+          background: #D1FAE5;
+          color: #065F46;
+        }
+
+        .scene-state.warn {
+          background: #FEF3C7;
+          color: #92400E;
+        }
+
+        .scene-state.damaged {
+          background: #FEE2E2;
+          color: #B91C1C;
         }
 
         .message {
