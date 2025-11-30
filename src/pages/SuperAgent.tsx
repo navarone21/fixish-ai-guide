@@ -585,7 +585,50 @@ export default function SuperAgent() {
         {activeModule === 'mesh' && (
           <div className="module">
             <h1>3D Mesh Viewer</h1>
-            <canvas id="mesh-canvas" className="mesh-canvas"></canvas>
+
+            <div className="mesh-toolbar">
+              <button onClick={() => toast({ title: "Loading", description: "Mesh data loaded" })}>
+                Load Latest Mesh
+              </button>
+              <button onClick={() => toast({ title: "View", description: "Wireframe mode enabled" })}>
+                Wireframe
+              </button>
+              <button onClick={() => toast({ title: "View", description: "Solid mode enabled" })}>
+                Solid
+              </button>
+              <button onClick={() => toast({ title: "Camera", description: "Camera reset to default" })}>
+                Reset Camera
+              </button>
+            </div>
+
+            <div className="mesh-layout">
+              <canvas id="mesh-canvas"></canvas>
+
+              <div className="mesh-info">
+                <h3>Mesh Information</h3>
+                <div className="space-y-2 mt-3">
+                  <p className="text-sm">
+                    <strong>Vertices:</strong> <span id="mesh-verts" className="opacity-70">12,456</span>
+                  </p>
+                  <p className="text-sm">
+                    <strong>Faces:</strong> <span id="mesh-faces" className="opacity-70">8,234</span>
+                  </p>
+                  <p className="text-sm font-semibold mt-4">Detected Damage Areas:</p>
+                  <ul id="mesh-damage-list" className="text-sm opacity-70 ml-4 mt-2 space-y-1">
+                    <li>• Front panel crack (confidence: 92%)</li>
+                    <li>• Side dent (confidence: 87%)</li>
+                    <li>• Hinge misalignment (confidence: 78%)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 rounded-lg border border-yellow-200 bg-yellow-50 text-sm">
+              <p className="font-semibold text-yellow-800">📌 Note:</p>
+              <p className="text-yellow-700 mt-1">
+                3D mesh rendering requires connection to Fix-ISH backend. Upload images in Super Agent to generate mesh data.
+              </p>
+            </div>
           </div>
         )}
 
@@ -1220,6 +1263,75 @@ export default function SuperAgent() {
 
         .dark-mode .meter {
           background: #374151;
+        }
+
+        .mesh-toolbar {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .mesh-toolbar button {
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: #2A6DF1;
+          color: white;
+          border: none;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s ease;
+        }
+
+        .mesh-toolbar button:hover {
+          background: #1E5BD9;
+        }
+
+        .mesh-layout {
+          display: flex;
+          margin-top: 16px;
+          gap: 20px;
+        }
+
+        #mesh-canvas {
+          width: 70%;
+          height: 450px;
+          background: #0D0D14;
+          border-radius: 10px;
+          border: 1px solid #1F2937;
+        }
+
+        .mesh-info {
+          width: 30%;
+          background: #FFFFFF;
+          border-radius: 10px;
+          padding: 14px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .dark-mode .mesh-info {
+          background: #1D2433;
+          border: 1px solid #394457;
+        }
+
+        .mesh-info h3 {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+          .mesh-layout {
+            flex-direction: column;
+          }
+
+          #mesh-canvas {
+            width: 100%;
+            height: 300px;
+          }
+
+          .mesh-info {
+            width: 100%;
+          }
         }
 
         .message {
