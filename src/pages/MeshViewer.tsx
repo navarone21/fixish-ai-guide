@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { MeshEngine } from "@/lib/meshEngine";
 import { useFixish } from "@/contexts/FixishProvider";
 import MainNav from "@/components/MainNav";
+import { Button } from "@/components/ui/button";
 
 export default function MeshViewerPage() {
   // LABEL D — FIXISH State + Refs
@@ -62,6 +63,22 @@ export default function MeshViewerPage() {
           <h2 className="text-lg font-semibold mb-2">Mesh Info</h2>
           <p className="text-sm text-muted-foreground">Vertices: {meshMeta?.vertices ?? "-"}</p>
           <p className="text-sm text-muted-foreground">Faces: {meshMeta?.faces ?? "-"}</p>
+        </div>
+
+        {/* Control Buttons */}
+        <div className="mesh-controls absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg flex flex-col gap-2">
+          <Button variant="default" className="w-full">
+            Load Mesh
+          </Button>
+          <Button variant="outline" className="w-full">
+            Wireframe
+          </Button>
+          <Button variant="outline" className="w-full">
+            Solid
+          </Button>
+          <Button variant="secondary" className="w-full">
+            Reset Camera
+          </Button>
         </div>
       </div>
     </div>
