@@ -565,43 +565,67 @@ export default function SuperAgent() {
             </div>
             
             {conversations.length === 0 ? (
-              <div className="text-center py-12 opacity-70">
-                <p>No conversation history yet</p>
+              <div id="history-empty" className="text-center py-12 opacity-70">
+                <p>No projects yet.</p>
                 <p className="text-sm mt-2">Start a conversation in Super Agent to save it</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className="p-4 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition-all"
-                    style={{ background: theme === 'light' ? '#F9FAFB' : '#1F2937' }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1" onClick={() => loadConversation(conv.id)}>
-                        <h3 className="font-semibold mb-1">{conv.title}</h3>
-                        <p className="text-xs opacity-60">
-                          Last message: {new Date(conv.last_message_at).toLocaleString()}
-                        </p>
-                        <p className="text-xs opacity-60 mt-1">
-                          Created: {new Date(conv.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('Delete this conversation?')) {
-                            deleteConversation(conv.id);
-                          }
-                        }}
-                        className="px-3 py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Open</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conversations.map((conv) => (
+                    <tr key={conv.id}>
+                      <td>
+                        <div className="font-medium">{conv.title}</div>
+                        <div className="text-xs opacity-60 mt-1">
+                          ID: {conv.id.substring(0, 8)}...
+                        </div>
+                      </td>
+                      <td>
+                        <div>{new Date(conv.created_at).toLocaleDateString()}</div>
+                        <div className="text-xs opacity-60 mt-1">
+                          {new Date(conv.created_at).toLocaleTimeString()}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="px-3 py-1 rounded-full text-xs font-medium" style={{
+                          background: '#E6F2FF',
+                          color: '#2A6DF1'
+                        }}>
+                          Completed
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => loadConversation(conv.id)}
+                            className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+                          >
+                            Open
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Delete this conversation?')) {
+                                deleteConversation(conv.id);
+                              }
+                            }}
+                            className="px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         )}
@@ -976,6 +1000,37 @@ export default function SuperAgent() {
         .dark-mode .setting-card {
           background: #1D2433;
           border: 1px solid #394457;
+        }
+
+        .history-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .history-table th {
+          background: #E2E8F0;
+          padding: 12px;
+          text-align: left;
+          font-weight: 600;
+        }
+
+        .history-table td {
+          padding: 12px;
+          border-bottom: 1px solid #EDF2F7;
+        }
+
+        .dark-mode .history-table th {
+          background: #222A38;
+        }
+
+        .dark-mode .history-table td {
+          border-color: #2C3548;
+        }
+
+        #history-empty {
+          text-align: center;
+          padding: 48px 20px;
+          opacity: 0.7;
         }
 
         .message {
