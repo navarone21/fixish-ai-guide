@@ -352,18 +352,30 @@ export default function SuperAgent() {
             </Button>
           </div>
 
-          {/* Center Status */}
+          {/* Center Status - Skill Level Switcher */}
           <div className="hidden md:flex items-center gap-2">
-            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
-              <Sparkles className="w-3 h-3 mr-1" />
-              {currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} Mode
-            </Badge>
-            {voiceEnabled && (
-              <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
-                <Volume2 className="w-3 h-3 mr-1" />
-                Voice On
-              </Badge>
-            )}
+            <div className="flex gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1 border">
+              {(["beginner", "intermediate", "expert"] as SkillLevel[]).map(level => (
+                <Button
+                  key={level}
+                  variant={skillLevel === level ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSkillLevel(level)}
+                  className="text-xs h-7 px-3 capitalize"
+                >
+                  {level === "beginner" ? "🎓 Guided" : level === "intermediate" ? "⚡ Standard" : "🔧 Expert"}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`h-8 gap-1 bg-background/80 backdrop-blur-sm border ${voiceEnabled ? "text-primary" : "text-muted-foreground"}`}
+            >
+              {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              <span className="text-xs">{voiceEnabled ? "Voice On" : "Voice Off"}</span>
+            </Button>
           </div>
 
           {/* Right Controls */}
@@ -640,24 +652,30 @@ export default function SuperAgent() {
               )}
               
               <div className="flex gap-2 items-end bg-muted/50 rounded-2xl p-3 border border-border/50">
-                <div className="flex gap-1 shrink-0">
-                  <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
-                  <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} title="Upload image" className="hover:bg-primary/10">
-                    <ImageIcon className="w-5 h-5 text-primary" />
-                  </Button>
+                {/* Single Multimodal Upload Button */}
+                <input 
+                  ref={imageInputRef} 
+                  type="file" 
+                  accept="image/*,video/*,.pdf,.txt,.doc,.docx" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const fileType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document";
+                    handleFileChange(e, fileType);
+                  }} 
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => imageInputRef.current?.click()} 
+                  title="Upload file (image, video, or document)" 
+                  className="hover:bg-primary/10 shrink-0"
+                >
+                  <Upload className="w-5 h-5 text-primary" />
+                </Button>
                   
-                  <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(e, "video")} />
-                  <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()} title="Upload video" className="hover:bg-primary/10">
-                    <Video className="w-5 h-5 text-primary" />
-                  </Button>
-
-                  <input ref={docInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={(e) => handleFileChange(e, "document")} />
-                  <Button variant="ghost" size="icon" onClick={() => docInputRef.current?.click()} title="Upload document" className="hover:bg-primary/10">
-                    <Upload className="w-5 h-5 text-primary" />
-                  </Button>
-                  
-                  <VoiceRecorder onTranscript={handleVoiceTranscript} isDarkMode={false} />
-                </div>
+                <VoiceRecorder onTranscript={handleVoiceTranscript} isDarkMode={false} />
                 
                 <textarea
                   value={input}
@@ -683,7 +701,7 @@ export default function SuperAgent() {
               <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Info className="w-3 h-3" />
-                  Upload images, videos, or documents for AI analysis
+                  Supports images, videos, PDFs & documents
                 </span>
               </div>
             </motion.div>
