@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -53,10 +54,15 @@ import TroubleshootPanel from "@/components/TroubleshootPanel";
 import StepVideoPlayer from "@/components/StepVideoPlayer";
 import SceneGraphPanel from "@/components/SceneGraphPanel";
 import GestureIndicator from "@/components/GestureIndicator";
+import { RepairTemplates } from "@/components/RepairTemplates";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Camera, 
   MessageSquare, 
@@ -72,7 +78,19 @@ import {
   Eye,
   Layers,
   Volume2,
-  VolumeX
+  VolumeX,
+  ChevronRight,
+  Sparkles,
+  Play,
+  Pause,
+  RotateCcw,
+  Maximize2,
+  Minimize2,
+  Info,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  Upload
 } from "lucide-react";
 
 type Mode = "chat" | "live";
@@ -86,7 +104,17 @@ interface Message {
   steps?: string[];
   tools?: string[];
   warnings?: string[];
+  confidence?: number;
 }
+
+const modePresets = {
+  beginner: { label: "Beginner", description: "Maximum guidance with all helpers", icon: "🎓" },
+  expert: { label: "Expert", description: "Minimal UI for pros", icon: "⚡" },
+  minimal: { label: "Minimal", description: "Essential features only", icon: "🎯" },
+  developer: { label: "Developer", description: "All features for testing", icon: "🔧" },
+  ar_heavy: { label: "AR Focus", description: "Visual overlays emphasized", icon: "👁️" },
+  safety_first: { label: "Safety First", description: "All warnings enabled", icon: "🛡️" },
+};
 
 export default function SuperAgent() {
   const { toast } = useToast();
@@ -96,23 +124,26 @@ export default function SuperAgent() {
   const [skillLevel, setSkillLevel] = useState<SkillLevel>("beginner");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("modes");
   
   // Chat State
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ type: string; url: string; file: File } | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(true);
   
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const handTrackingVideoRef = useRef<HTMLVideoElement>(null);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
 
   // Fix-ISH Live Hooks
-  const { features, toggleFeature } = useFeatureStore();
+  const { features, toggleFeature, currentMode, setMode: setFeatureMode } = useFeatureStore();
   const state = useFixishState();
   const guidance = useFixishGuidance();
   const world = useFixishWorld();
@@ -164,6 +195,11 @@ export default function SuperAgent() {
     }
   }, [messages]);
 
+  // Hide templates when messages exist
+  useEffect(() => {
+    if (messages.length > 0) setShowTemplates(false);
+  }, [messages]);
+
   const activeStep = world?.task_state?.active_step;
 
   // File handling
@@ -181,7 +217,18 @@ export default function SuperAgent() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setMediaPreview({ type, url, file });
+    setShowTemplates(false);
     e.target.value = "";
+  };
+
+  const handleTemplateSelect = (prompt: string) => {
+    setInput(prompt);
+    setShowTemplates(false);
+  };
+
+  const handleVoiceTranscript = (text: string) => {
+    setInput(prev => prev ? `${prev} ${text}` : text);
+    setShowTemplates(false);
   };
 
   // Send message to backend
@@ -230,7 +277,8 @@ export default function SuperAgent() {
         timestamp: new Date(),
         steps: data.steps,
         tools: data.tools,
-        warnings: data.warnings
+        warnings: data.warnings,
+        confidence: data.confidence
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -256,10 +304,19 @@ export default function SuperAgent() {
     } catch {}
   };
 
-  const toggleVoiceRecording = () => {
-    setIsRecording(!isRecording);
-    // Voice recording implementation would go here
-    toast({ title: isRecording ? "Recording stopped" : "Listening...", description: isRecording ? "Processing your voice..." : "Speak now" });
+  const clearChat = () => {
+    setMessages([]);
+    setShowTemplates(true);
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
   };
 
   return (
@@ -267,197 +324,301 @@ export default function SuperAgent() {
       <Navbar />
       
       <main className="flex-1 relative">
-        {/* MODE SWITCHER & SETTINGS */}
-        <div className="absolute top-4 left-4 z-50 flex gap-2">
-          <Button
-            variant={mode === "chat" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMode("chat")}
-            className="gap-2"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Chat
-          </Button>
-          <Button
-            variant={mode === "live" ? "default" : "outline"}
-            size="sm"
-            onClick={() => { setMode("live"); if (!isStreaming) startCamera(); }}
-            className="gap-2"
-          >
-            <Camera className="w-4 h-4" />
-            Live AR
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings2 className="w-4 h-4" />
-          </Button>
-        </div>
+        {/* TOP CONTROL BAR */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-4 left-4 right-4 z-50 flex items-center justify-between"
+        >
+          {/* Mode Switcher */}
+          <div className="flex gap-2 bg-background/80 backdrop-blur-sm rounded-xl p-1 border shadow-lg">
+            <Button
+              variant={mode === "chat" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setMode("chat")}
+              className="gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Chat</span>
+            </Button>
+            <Button
+              variant={mode === "live" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => { setMode("live"); if (!isStreaming) startCamera(); }}
+              className="gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              <span className="hidden sm:inline">Live AR</span>
+            </Button>
+          </div>
+
+          {/* Center Status */}
+          <div className="hidden md:flex items-center gap-2">
+            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+              <Sparkles className="w-3 h-3 mr-1" />
+              {currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} Mode
+            </Badge>
+            {voiceEnabled && (
+              <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                <Volume2 className="w-3 h-3 mr-1" />
+                Voice On
+              </Badge>
+            )}
+          </div>
+
+          {/* Right Controls */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleFullscreen}
+              className="bg-background/80 backdrop-blur-sm"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant={showSettings ? "default" : "outline"}
+              size="icon"
+              onClick={() => setShowSettings(!showSettings)}
+              className={showSettings ? "" : "bg-background/80 backdrop-blur-sm"}
+            >
+              <Settings2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </motion.div>
 
         {/* SETTINGS PANEL */}
-        {showSettings && (
-          <Card className="absolute top-16 left-4 z-50 p-4 w-72 bg-background/95 backdrop-blur-sm border shadow-lg">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Settings2 className="w-4 h-4" /> Settings
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Skill Level</label>
-                <div className="flex gap-2">
-                  {(["beginner", "intermediate", "expert"] as SkillLevel[]).map(level => (
-                    <Badge
-                      key={level}
-                      variant={skillLevel === level ? "default" : "outline"}
-                      className="cursor-pointer capitalize"
-                      onClick={() => setSkillLevel(level)}
-                    >
-                      {level}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Voice Guidance</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setVoiceEnabled(!voiceEnabled)}
-                >
-                  {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Safety Warnings</span>
-                <Badge variant="secondary"><Shield className="w-3 h-3 mr-1" /> Active</Badge>
-              </div>
-              
-              <div className="border-t pt-3">
-                <label className="text-sm font-medium mb-2 block">Features</label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <Badge 
-                    variant={features.arOverlay ? "default" : "outline"} 
-                    className="cursor-pointer justify-center"
-                    onClick={() => toggleFeature("arOverlay")}
-                  >
-                    <Layers className="w-3 h-3 mr-1" /> AR Overlay
-                  </Badge>
-                  <Badge 
-                    variant={features.depth ? "default" : "outline"}
-                    className="cursor-pointer justify-center"
-                    onClick={() => toggleFeature("depth")}
-                  >
-                    <Eye className="w-3 h-3 mr-1" /> Depth
-                  </Badge>
-                  <Badge 
-                    variant={features.mesh ? "default" : "outline"}
-                    className="cursor-pointer justify-center"
-                    onClick={() => toggleFeature("mesh")}
-                  >
-                    <Zap className="w-3 h-3 mr-1" /> 3D Mesh
-                  </Badge>
-                  <Badge 
-                    variant={features.voice ? "default" : "outline"}
-                    className="cursor-pointer justify-center"
-                    onClick={() => toggleFeature("voice")}
-                  >
-                    <Volume2 className="w-3 h-3 mr-1" /> Voice
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              className="absolute top-16 right-4 z-50"
+            >
+              <Card className="p-4 w-80 bg-background/95 backdrop-blur-sm border shadow-xl">
+                <Tabs value={settingsTab} onValueChange={setSettingsTab}>
+                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="modes">Modes</TabsTrigger>
+                    <TabsTrigger value="features">Features</TabsTrigger>
+                    <TabsTrigger value="voice">Voice</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="modes" className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(modePresets).map(([key, preset]) => (
+                        <Button
+                          key={key}
+                          variant={currentMode === key ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setFeatureMode(key)}
+                          className="h-auto flex-col py-2 text-left"
+                        >
+                          <span className="text-lg mb-1">{preset.icon}</span>
+                          <span className="text-xs font-medium">{preset.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      {modePresets[currentMode as keyof typeof modePresets]?.description || "Custom configuration"}
+                    </p>
+                  </TabsContent>
+
+                  <TabsContent value="features" className="space-y-3">
+                    <div className="space-y-2">
+                      {[
+                        { key: "arOverlay", label: "AR Overlay", icon: <Layers className="w-4 h-4" /> },
+                        { key: "depth", label: "Depth Maps", icon: <Eye className="w-4 h-4" /> },
+                        { key: "mesh", label: "3D Mesh", icon: <Zap className="w-4 h-4" /> },
+                        { key: "ghostReplay", label: "Step Replay", icon: <RotateCcw className="w-4 h-4" /> },
+                        { key: "troubleshooting", label: "Troubleshooting", icon: <AlertTriangle className="w-4 h-4" /> },
+                        { key: "sceneGraph", label: "Scene Graph", icon: <FileText className="w-4 h-4" /> },
+                        { key: "gestureControl", label: "Gestures", icon: <Sparkles className="w-4 h-4" /> },
+                        { key: "stepClips", label: "Video Clips", icon: <Video className="w-4 h-4" /> },
+                      ].map(({ key, label, icon }) => (
+                        <div key={key} className="flex items-center justify-between py-1">
+                          <Label className="flex items-center gap-2 text-sm cursor-pointer">
+                            {icon}
+                            {label}
+                          </Label>
+                          <Switch
+                            checked={features[key as keyof typeof features]}
+                            onCheckedChange={() => toggleFeature(key as any)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="voice" className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Volume2 className="w-4 h-4" />
+                        Voice Guidance
+                      </Label>
+                      <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Skill Level</Label>
+                      <div className="flex gap-2">
+                        {(["beginner", "intermediate", "expert"] as SkillLevel[]).map(level => (
+                          <Button
+                            key={level}
+                            variant={skillLevel === level ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSkillLevel(level)}
+                            className="flex-1 capitalize text-xs"
+                          >
+                            {level}
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {skillLevel === "beginner" && "Slower speech, more detail"}
+                        {skillLevel === "intermediate" && "Balanced guidance"}
+                        {skillLevel === "expert" && "Faster, concise instructions"}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-sm flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-green-500" />
+                        Safety Warnings
+                      </span>
+                      <Badge variant="secondary">Always On</Badge>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* CHAT MODE */}
         {mode === "chat" && (
-          <div className="h-[calc(100vh-8rem)] flex flex-col max-w-4xl mx-auto p-4">
+          <div className="h-[calc(100vh-8rem)] flex flex-col max-w-4xl mx-auto p-4 pt-20">
             <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                    <Zap className="w-10 h-10 text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Fix-ISH Super Agent</h2>
-                  <p className="text-muted-foreground max-w-md mb-6">
-                    Describe what you need help with or upload a photo/video. I'll detect the issue, guide you through repairs with AR overlays, voice instructions, and safety warnings.
-                  </p>
-                  <div className="flex gap-2 flex-wrap justify-center">
-                    <Badge variant="secondary">🔧 Auto-detect issues</Badge>
-                    <Badge variant="secondary">📹 AR guidance</Badge>
-                    <Badge variant="secondary">🗣️ Voice coaching</Badge>
-                    <Badge variant="secondary">⚠️ Safety alerts</Badge>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4 py-4">
-                  {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[80%] rounded-2xl p-4 ${
-                        msg.role === "user" 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      }`}>
-                        {msg.media && (
-                          <div className="mb-3 rounded-lg overflow-hidden">
-                            {msg.media.type === "image" && <img src={msg.media.url} alt="" className="max-h-48 rounded" />}
-                            {msg.media.type === "video" && <video src={msg.media.url} controls className="max-h-48 rounded" />}
-                          </div>
-                        )}
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                        
-                        {msg.steps && msg.steps.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            {msg.steps.map((step, j) => (
-                              <div key={j} className="flex gap-2 items-start p-2 bg-background/50 rounded-lg text-sm">
-                                <Badge variant="outline" className="shrink-0">{j + 1}</Badge>
-                                <span>{step}</span>
+              <AnimatePresence mode="wait">
+                {showTemplates && messages.length === 0 ? (
+                  <motion.div
+                    key="templates"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <RepairTemplates onSelectTemplate={handleTemplateSelect} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="messages"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="space-y-4 py-4"
+                  >
+                    {messages.map((msg, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div className={`max-w-[85%] rounded-2xl p-4 ${
+                          msg.role === "user" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted"
+                        }`}>
+                          {msg.media && (
+                            <div className="mb-3 rounded-lg overflow-hidden">
+                              {msg.media.type === "image" && <img src={msg.media.url} alt="" className="max-h-48 rounded" />}
+                              {msg.media.type === "video" && <video src={msg.media.url} controls className="max-h-48 rounded" />}
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          
+                          {msg.confidence !== undefined && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="h-1.5 flex-1 bg-background/50 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-green-500 rounded-full transition-all"
+                                  style={{ width: `${msg.confidence * 100}%` }}
+                                />
                               </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {msg.tools && msg.tools.length > 0 && (
-                          <div className="mt-3 flex gap-2 flex-wrap">
-                            {msg.tools.map((t, j) => (
-                              <Badge key={j} variant="secondary">🔧 {t}</Badge>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {msg.warnings && msg.warnings.length > 0 && (
-                          <div className="mt-3 space-y-1">
-                            {msg.warnings.map((w, j) => (
-                              <div key={j} className="text-sm text-destructive flex items-center gap-1">
-                                <Shield className="w-3 h-3" /> {w}
+                              <span className="text-xs opacity-70">{Math.round(msg.confidence * 100)}%</span>
+                            </div>
+                          )}
+                          
+                          {msg.steps && msg.steps.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <div className="text-xs font-semibold opacity-70 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Repair Steps
                               </div>
-                            ))}
+                              {msg.steps.map((step, j) => (
+                                <div key={j} className="flex gap-2 items-start p-2 bg-background/50 rounded-lg text-sm">
+                                  <Badge variant="outline" className="shrink-0">{j + 1}</Badge>
+                                  <span>{step}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {msg.tools && msg.tools.length > 0 && (
+                            <div className="mt-3">
+                              <div className="text-xs font-semibold opacity-70 mb-1">Tools Needed</div>
+                              <div className="flex gap-2 flex-wrap">
+                                {msg.tools.map((t, j) => (
+                                  <Badge key={j} variant="secondary">🔧 {t}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {msg.warnings && msg.warnings.length > 0 && (
+                            <div className="mt-3 p-2 bg-destructive/10 rounded-lg">
+                              <div className="text-xs font-semibold text-destructive mb-1 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> Safety Warnings
+                              </div>
+                              {msg.warnings.map((w, j) => (
+                                <div key={j} className="text-sm text-destructive/90 flex items-center gap-1">
+                                  <ChevronRight className="w-3 h-3" /> {w}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="text-xs opacity-50 mt-2">
+                            {msg.timestamp.toLocaleTimeString()}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted rounded-2xl p-4">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                      </motion.div>
+                    ))}
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex justify-start"
+                      >
+                        <div className="bg-muted rounded-2xl p-4">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </ScrollArea>
 
             {/* INPUT AREA */}
-            <div className="border-t pt-4 mt-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border-t pt-4 mt-4"
+            >
               {mediaPreview && (
                 <div className="mb-3 relative inline-block">
                   <Button
@@ -470,28 +631,32 @@ export default function SuperAgent() {
                   </Button>
                   {mediaPreview.type === "image" && <img src={mediaPreview.url} alt="" className="h-20 rounded-lg" />}
                   {mediaPreview.type === "video" && <video src={mediaPreview.url} className="h-20 rounded-lg" />}
+                  {mediaPreview.type === "document" && (
+                    <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
               )}
               
-              <div className="flex gap-2 items-end">
-                <div className="flex gap-1">
+              <div className="flex gap-2 items-end bg-muted/50 rounded-2xl p-3 border border-border/50">
+                <div className="flex gap-1 shrink-0">
                   <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "image")} />
-                  <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()}>
-                    <ImageIcon className="w-5 h-5" />
+                  <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} title="Upload image" className="hover:bg-primary/10">
+                    <ImageIcon className="w-5 h-5 text-primary" />
                   </Button>
                   
                   <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(e, "video")} />
-                  <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()}>
-                    <Video className="w-5 h-5" />
+                  <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()} title="Upload video" className="hover:bg-primary/10">
+                    <Video className="w-5 h-5 text-primary" />
+                  </Button>
+
+                  <input ref={docInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={(e) => handleFileChange(e, "document")} />
+                  <Button variant="ghost" size="icon" onClick={() => docInputRef.current?.click()} title="Upload document" className="hover:bg-primary/10">
+                    <Upload className="w-5 h-5 text-primary" />
                   </Button>
                   
-                  <Button 
-                    variant={isRecording ? "destructive" : "ghost"} 
-                    size="icon" 
-                    onClick={toggleVoiceRecording}
-                  >
-                    {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                  </Button>
+                  <VoiceRecorder onTranscript={handleVoiceTranscript} isDarkMode={false} />
                 </div>
                 
                 <textarea
@@ -499,15 +664,29 @@ export default function SuperAgent() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
                   placeholder="Describe what needs fixing..."
-                  className="flex-1 min-h-[48px] max-h-32 resize-none rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 min-h-[48px] max-h-32 resize-none bg-transparent px-4 py-3 text-sm focus:outline-none"
                   rows={1}
                 />
                 
-                <Button onClick={handleSendMessage} disabled={isLoading} size="icon" className="h-12 w-12 rounded-xl">
-                  <Send className="w-5 h-5" />
-                </Button>
+                <div className="flex gap-1">
+                  {messages.length > 0 && (
+                    <Button variant="ghost" size="icon" onClick={clearChat} title="Clear chat">
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !mediaPreview)} size="icon" className="h-10 w-10 rounded-xl">
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
-            </div>
+              
+              <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  Tip: Upload photos of damaged items for visual diagnosis
+                </span>
+              </div>
+            </motion.div>
           </div>
         )}
 
@@ -548,13 +727,13 @@ export default function SuperAgent() {
             {features.stepClips && videoClip && <StepVideoPlayer frames={videoClip} />}
             
             {features.sceneGraph && world?.scene_graph && (
-              <div className="absolute top-20 left-4 w-64 z-30">
+              <div className="absolute top-24 left-4 w-64 z-30">
                 <SceneGraphPanel scene={world.scene_graph} />
               </div>
             )}
             
             {features.gestureControl && gesture && (
-              <div className="absolute bottom-20 right-4 w-48 z-30">
+              <div className="absolute bottom-24 right-4 w-48 z-30">
                 <GestureIndicator gesture={gesture} />
               </div>
             )}
@@ -574,13 +753,13 @@ export default function SuperAgent() {
             {activeStep?.path_points && <ActionPath path={activeStep.path_points} />}
 
             {/* VIEW MODE TOGGLE */}
-            <div className="absolute top-16 right-4 z-40 flex flex-col gap-1">
+            <div className="absolute top-24 right-4 z-40 flex flex-col gap-1">
               {(["camera", "depth", "pointcloud", "mesh"] as const).map(v => (
                 <Button
                   key={v}
                   variant={viewMode === v ? "default" : "secondary"}
                   size="sm"
-                  className="text-xs"
+                  className="text-xs w-20"
                   onClick={() => setViewMode(v)}
                 >
                   {v === "camera" ? "Camera" : v === "depth" ? "Depth" : v === "pointcloud" ? "Points" : "Mesh"}
@@ -597,57 +776,91 @@ export default function SuperAgent() {
 
             {/* STATE OVERLAYS */}
             {state === "idle" && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4">
-                <p className="text-xl font-bold text-white">Point your camera at the object</p>
-                <Button onClick={isStreaming ? stopCamera : startCamera} size="lg">
-                  {isStreaming ? "Stop Camera" : "Start Scanning"}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4"
+              >
+                <div className="text-center">
+                  <Camera className="w-16 h-16 text-white/50 mx-auto mb-4" />
+                  <p className="text-xl font-bold text-white mb-2">Point your camera at the object</p>
+                  <p className="text-sm text-white/70 mb-6">The AI will automatically detect and analyze damage</p>
+                </div>
+                <Button onClick={isStreaming ? stopCamera : startCamera} size="lg" className="gap-2">
+                  {isStreaming ? <><Pause className="w-5 h-5" /> Stop Camera</> : <><Play className="w-5 h-5" /> Start Scanning</>}
                 </Button>
-              </div>
+              </motion.div>
             )}
 
             {state === "scanning" && (
-              <div className="absolute top-20 left-4 text-sm px-3 py-1 bg-white/20 backdrop-blur-sm rounded-md text-white">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute top-24 left-4 px-4 py-2 bg-primary/90 backdrop-blur-sm rounded-lg text-white flex items-center gap-2"
+              >
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 Scanning… Move camera slowly
-              </div>
+              </motion.div>
             )}
 
             {state === "analyzing" && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                <p className="text-xl font-semibold text-white animate-pulse">Analyzing… Hold still</p>
+                <div className="text-center">
+                  <Zap className="w-12 h-12 text-primary mx-auto mb-4 animate-pulse" />
+                  <p className="text-xl font-semibold text-white">Analyzing… Hold still</p>
+                </div>
               </div>
             )}
 
             {state === "generating_steps" && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <p className="text-2xl animate-pulse text-white">Generating repair steps…</p>
+                <div className="text-center">
+                  <Sparkles className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
+                  <p className="text-2xl text-white">Generating repair steps…</p>
+                </div>
               </div>
             )}
 
             {state === "instructing" && <InstructionsPanel />}
 
             {state === "awaiting_user_action" && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-                <Button size="lg">Mark Step Complete</Button>
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                <Button size="lg" className="gap-2 shadow-lg">
+                  <CheckCircle2 className="w-5 h-5" /> Mark Step Complete
+                </Button>
               </div>
             )}
 
             {state === "paused" && (
               <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4">
+                <Pause className="w-16 h-16 text-white/50" />
                 <p className="text-xl text-white">Paused</p>
-                <Button size="lg">Resume</Button>
+                <Button size="lg" className="gap-2">
+                  <Play className="w-5 h-5" /> Resume
+                </Button>
               </div>
             )}
 
             {state === "error" && (
-              <div className="absolute inset-0 bg-destructive/60 flex items-center justify-center">
+              <div className="absolute inset-0 bg-destructive/60 flex flex-col items-center justify-center gap-4">
+                <AlertTriangle className="w-16 h-16 text-white" />
                 <p className="text-xl font-bold text-white">Error — adjust camera or restart</p>
+                <Button variant="secondary" onClick={() => { stopCamera(); startCamera(); }}>
+                  <RotateCcw className="w-4 h-4 mr-2" /> Retry
+                </Button>
               </div>
             )}
 
             {state === "completed" && (
-              <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                <p className="text-3xl font-bold text-green-400">✔ Repair Completed!</p>
-              </div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4"
+              >
+                <CheckCircle2 className="w-20 h-20 text-green-400" />
+                <p className="text-3xl font-bold text-green-400">Repair Completed!</p>
+                <Button onClick={clearChat} className="mt-4">Start New Repair</Button>
+              </motion.div>
             )}
 
             {/* PERSISTENT PANELS */}
