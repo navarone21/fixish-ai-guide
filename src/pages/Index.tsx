@@ -73,27 +73,27 @@ const Index = () => {
     {
       icon: Brain,
       title: "Adaptive Intelligence",
-      description: "Adjusts guidance by skill and device.",
+      description: "Learns your preferences and adjusts to any task.",
     },
     {
       icon: Eye,
-      title: "Visual Detection",
-      description: "Recognizes tools, parts, and problems.",
+      title: "Visual Understanding",
+      description: "Analyzes images, documents, and real-world scenes.",
     },
     {
       icon: Video,
-      title: "Dynamic Tutorials",
-      description: "Auto-creates step-by-step video guides.",
+      title: "Step-by-Step Guidance",
+      description: "Generates clear instructions for any project.",
     },
     {
       icon: MessageSquare,
-      title: "Real-Time Interaction",
-      description: "Talk naturally to clarify or replay steps.",
+      title: "Natural Conversation",
+      description: "Chat naturally with voice, text, or media.",
     },
     {
       icon: RotateCw,
-      title: "Continuous Learning",
-      description: "Improves accuracy with every session.",
+      title: "Continuous Improvement",
+      description: "Gets smarter with every interaction.",
     },
   ];
 
@@ -188,7 +188,7 @@ const Index = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.4, duration: 0.8 }}
           >
-            Adaptive AI for Real-World Problem Solving.
+            Your Intelligent Assistant for Any Task.
           </motion.p>
 
           <motion.p
@@ -197,8 +197,8 @@ const Index = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.6, duration: 0.8 }}
           >
-            Fix-ISH is an intelligent assistant that understands what you see, detects what's wrong, 
-            and shows you how to fix it — step by step.
+            Fix-ISH is a professional AI assistant that understands your needs, analyzes your content, 
+            and delivers expert guidance — for repairs, projects, research, and beyond.
           </motion.p>
 
           <motion.div
@@ -284,12 +284,12 @@ const Index = () => {
             className="text-center"
           >
             <h2 className="text-4xl md:text-5xl font-light mb-8 tracking-tight">
-              Your Smartest Repair Assistant.
+              Your All-Purpose AI Partner.
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Fix-ISH is an adaptive multimodal AI system that helps you build, repair, and learn in real time. 
-              Using advanced vision and language models, it identifies parts, tools, and issues from your camera 
-              feed and generates personalized, step-by-step guidance — just like having an expert at your side.
+              Fix-ISH is a professional multimodal AI system that helps you accomplish any task. 
+              From analyzing documents and images to guiding you through complex projects, 
+              it adapts to your needs and delivers expert-level assistance — like having a specialist on call.
             </p>
           </motion.div>
         </div>
@@ -303,7 +303,7 @@ const Index = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-light text-center mb-20 tracking-tight"
           >
-            How Fix-ISH Works.
+            Powerful Capabilities.
           </motion.h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
