@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home } from "lucide-react";
 
@@ -7,6 +7,9 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isOnSuperAgent = location.pathname === "/super-agent";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,9 +51,11 @@ export function Navbar() {
             <Link to="/support" className="text-foreground hover:text-primary transition-colors">
               Support
             </Link>
-            <Link to="/super-agent">
-              <Button>Get Started</Button>
-            </Link>
+            {!isOnSuperAgent && (
+              <Link to="/super-agent">
+                <Button>Get Started</Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -102,9 +107,11 @@ export function Navbar() {
             >
               Support
             </Link>
-            <Link to="/super-agent" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full">Get Started</Button>
-            </Link>
+            {!isOnSuperAgent && (
+              <Link to="/super-agent" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full">Get Started</Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
