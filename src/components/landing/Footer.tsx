@@ -10,7 +10,7 @@ export function Footer() {
               Fix-ISH
             </Link>
             <p className="text-muted-foreground">
-              Adaptive AI for Real-World Problem Solving
+              Your Professional AI Assistant for Any Task
             </p>
             <p className="text-sm text-muted-foreground mt-4">
               © {new Date().getFullYear()} Fix-ISH. All rights reserved.

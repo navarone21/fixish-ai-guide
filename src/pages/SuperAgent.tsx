@@ -108,12 +108,12 @@ interface Message {
 }
 
 const modePresets = {
-  beginner: { label: "Beginner", description: "Maximum guidance with all helpers", icon: "🎓" },
-  expert: { label: "Expert", description: "Minimal UI for pros", icon: "⚡" },
-  minimal: { label: "Minimal", description: "Essential features only", icon: "🎯" },
-  developer: { label: "Developer", description: "All features for testing", icon: "🔧" },
-  ar_heavy: { label: "AR Focus", description: "Visual overlays emphasized", icon: "👁️" },
-  safety_first: { label: "Safety First", description: "All warnings enabled", icon: "🛡️" },
+  beginner: { label: "Guided", description: "Full assistance with detailed explanations", icon: "🎓" },
+  expert: { label: "Expert", description: "Streamlined interface for professionals", icon: "⚡" },
+  minimal: { label: "Focus", description: "Clean UI with essential features", icon: "🎯" },
+  developer: { label: "Full Suite", description: "All capabilities unlocked", icon: "🔧" },
+  ar_heavy: { label: "Visual", description: "Enhanced AR and visual overlays", icon: "👁️" },
+  safety_first: { label: "Careful", description: "Prioritizes safety and verification", icon: "🛡️" },
 };
 
 export default function SuperAgent() {
@@ -663,18 +663,18 @@ export default function SuperAgent() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                  placeholder="Describe what needs fixing..."
-                  className="flex-1 min-h-[48px] max-h-32 resize-none bg-transparent px-4 py-3 text-sm focus:outline-none"
+                  placeholder="Ask anything or describe your task..."
+                  className="flex-1 min-h-[48px] max-h-32 resize-none bg-transparent px-4 py-3 text-sm focus:outline-none placeholder:text-muted-foreground/60"
                   rows={1}
                 />
                 
                 <div className="flex gap-1">
                   {messages.length > 0 && (
-                    <Button variant="ghost" size="icon" onClick={clearChat} title="Clear chat">
+                    <Button variant="ghost" size="icon" onClick={clearChat} title="Clear chat" className="hover:bg-destructive/10 hover:text-destructive">
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   )}
-                  <Button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !mediaPreview)} size="icon" className="h-10 w-10 rounded-xl">
+                  <Button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !mediaPreview)} size="icon" className="h-10 w-10 rounded-xl shadow-md">
                     <Send className="w-5 h-5" />
                   </Button>
                 </div>
@@ -683,7 +683,7 @@ export default function SuperAgent() {
               <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Info className="w-3 h-3" />
-                  Tip: Upload photos of damaged items for visual diagnosis
+                  Upload images, videos, or documents for AI analysis
                 </span>
               </div>
             </motion.div>
@@ -779,15 +779,17 @@ export default function SuperAgent() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4"
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
               >
-                <div className="text-center">
-                  <Camera className="w-16 h-16 text-white/50 mx-auto mb-4" />
-                  <p className="text-xl font-bold text-white mb-2">Point your camera at the object</p>
-                  <p className="text-sm text-white/70 mb-6">The AI will automatically detect and analyze damage</p>
+                <div className="text-center max-w-md px-4">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+                    <Camera className="w-10 h-10 text-primary" />
+                  </div>
+                  <p className="text-2xl font-semibold text-white mb-3">Ready for Live Analysis</p>
+                  <p className="text-sm text-white/70 mb-8">Point your camera at any object, document, or scene. The AI will automatically detect, analyze, and provide real-time guidance.</p>
                 </div>
-                <Button onClick={isStreaming ? stopCamera : startCamera} size="lg" className="gap-2">
-                  {isStreaming ? <><Pause className="w-5 h-5" /> Stop Camera</> : <><Play className="w-5 h-5" /> Start Scanning</>}
+                <Button onClick={isStreaming ? stopCamera : startCamera} size="lg" className="gap-2 px-8 shadow-lg">
+                  {isStreaming ? <><Pause className="w-5 h-5" /> Stop Camera</> : <><Play className="w-5 h-5" /> Begin Analysis</>}
                 </Button>
               </motion.div>
             )}
