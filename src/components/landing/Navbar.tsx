@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Home } from "lucide-react";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,28 +26,29 @@ export function Navbar() {
     >
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">
+          <Link to="/" className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity">
             Fix-ISH
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-foreground hover:text-primary transition-colors">
-              Features
-            </a>
-            <a href="#pricing" className="text-foreground hover:text-primary transition-colors">
-              Pricing
-            </a>
-            <a href="#about" className="text-foreground hover:text-primary transition-colors">
-              About
-            </a>
-            <a href="#contact" className="text-foreground hover:text-primary transition-colors">
-              Contact
-            </a>
+          <div className="hidden md:flex items-center space-x-6">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2">
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
+            <Link to="/super-agent" className="text-foreground hover:text-primary transition-colors">
+              Super Agent
+            </Link>
             <Link to="/projects" className="text-foreground hover:text-primary transition-colors">
               Projects
             </Link>
-            <Link to="/chat">
+            <Link to="/pricing" className="text-foreground hover:text-primary transition-colors">
+              Pricing
+            </Link>
+            <Link to="/support" className="text-foreground hover:text-primary transition-colors">
+              Support
+            </Link>
+            <Link to="/super-agent">
               <Button>Get Started</Button>
             </Link>
           </div>
@@ -64,34 +66,21 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 space-y-4 animate-fade-in">
-            <a
-              href="#features"
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Home className="w-4 h-4" />
+              Home
+            </Link>
+            <Link
+              to="/super-agent"
               className="block text-foreground hover:text-primary transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Features
-            </a>
-            <a
-              href="#pricing"
-              className="block text-foreground hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pricing
-            </a>
-            <a
-              href="#about"
-              className="block text-foreground hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About
-            </a>
-            <a
-              href="#contact"
-              className="block text-foreground hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </a>
+              Super Agent
+            </Link>
             <Link
               to="/projects"
               className="block text-foreground hover:text-primary transition-colors"
@@ -99,7 +88,21 @@ export function Navbar() {
             >
               Projects
             </Link>
-            <Link to="/chat" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/pricing"
+              className="block text-foreground hover:text-primary transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            <Link
+              to="/support"
+              className="block text-foreground hover:text-primary transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Support
+            </Link>
+            <Link to="/super-agent" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full">Get Started</Button>
             </Link>
           </div>
