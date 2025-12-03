@@ -1,34 +1,49 @@
 import { create } from 'zustand';
 
+interface Features {
+  depth: boolean;
+  mesh: boolean;
+  ghostReplay: boolean;
+  troubleshooting: boolean;
+  stepClips: boolean;
+  sceneGraph: boolean;
+  gestureControl: boolean;
+  arOverlay: boolean;
+  voice: boolean;
+  pointCloud: boolean;
+  multiObject: boolean;
+  replay: boolean;
+  timewarp: boolean;
+}
+
 interface FeatureState {
-  features: {
-    depth: boolean;
-    mesh: boolean;
-    ghostReplay: boolean;
-    troubleshooting: boolean;
-    stepClips: boolean;
-    sceneGraph: boolean;
-    gestureControl: boolean;
-    arOverlay: boolean;
-    voice: boolean;
-  };
+  features: Features;
   currentMode: string;
-  toggleFeature: (feature: keyof FeatureState['features']) => void;
-  setFeature: (feature: keyof FeatureState['features'], enabled: boolean) => void;
+  toggleFeature: (feature: keyof Features) => void;
+  setFeature: (feature: keyof Features, enabled: boolean) => void;
   setMode: (mode: string) => void;
 }
 
-const modes = {
+const defaultFeatures: Features = {
+  depth: true,
+  mesh: false,
+  ghostReplay: true,
+  troubleshooting: true,
+  stepClips: true,
+  sceneGraph: true,
+  gestureControl: true,
+  arOverlay: true,
+  voice: true,
+  pointCloud: true,
+  multiObject: true,
+  replay: true,
+  timewarp: true,
+};
+
+const modes: Record<string, Features> = {
   beginner: {
-    depth: true,
+    ...defaultFeatures,
     mesh: false,
-    ghostReplay: true,
-    troubleshooting: true,
-    stepClips: true,
-    sceneGraph: true,
-    gestureControl: true,
-    arOverlay: true,
-    voice: true,
   },
   expert: {
     depth: false,
@@ -40,6 +55,10 @@ const modes = {
     gestureControl: true,
     arOverlay: true,
     voice: false,
+    pointCloud: false,
+    multiObject: true,
+    replay: false,
+    timewarp: false,
   },
   minimal: {
     depth: false,
@@ -51,6 +70,10 @@ const modes = {
     gestureControl: false,
     arOverlay: false,
     voice: false,
+    pointCloud: false,
+    multiObject: false,
+    replay: false,
+    timewarp: false,
   },
   developer: {
     depth: true,
@@ -62,6 +85,10 @@ const modes = {
     gestureControl: true,
     arOverlay: true,
     voice: true,
+    pointCloud: true,
+    multiObject: true,
+    replay: true,
+    timewarp: true,
   },
   ar_heavy: {
     depth: true,
@@ -73,6 +100,10 @@ const modes = {
     gestureControl: true,
     arOverlay: true,
     voice: true,
+    pointCloud: true,
+    multiObject: true,
+    replay: true,
+    timewarp: true,
   },
   safety_first: {
     depth: false,
@@ -84,6 +115,10 @@ const modes = {
     gestureControl: false,
     arOverlay: false,
     voice: true,
+    pointCloud: false,
+    multiObject: false,
+    replay: false,
+    timewarp: false,
   },
 };
 
