@@ -9,6 +9,8 @@ interface FeatureState {
     stepClips: boolean;
     sceneGraph: boolean;
     gestureControl: boolean;
+    arOverlay: boolean;
+    voice: boolean;
   };
   currentMode: string;
   toggleFeature: (feature: keyof FeatureState['features']) => void;
@@ -25,6 +27,8 @@ const modes = {
     stepClips: true,
     sceneGraph: true,
     gestureControl: true,
+    arOverlay: true,
+    voice: true,
   },
   expert: {
     depth: false,
@@ -34,6 +38,8 @@ const modes = {
     stepClips: false,
     sceneGraph: false,
     gestureControl: true,
+    arOverlay: true,
+    voice: false,
   },
   minimal: {
     depth: false,
@@ -43,6 +49,8 @@ const modes = {
     stepClips: false,
     sceneGraph: false,
     gestureControl: false,
+    arOverlay: false,
+    voice: false,
   },
   developer: {
     depth: true,
@@ -52,6 +60,8 @@ const modes = {
     stepClips: true,
     sceneGraph: true,
     gestureControl: true,
+    arOverlay: true,
+    voice: true,
   },
   ar_heavy: {
     depth: true,
@@ -61,6 +71,8 @@ const modes = {
     stepClips: true,
     sceneGraph: true,
     gestureControl: true,
+    arOverlay: true,
+    voice: true,
   },
   safety_first: {
     depth: false,
@@ -70,6 +82,8 @@ const modes = {
     stepClips: false,
     sceneGraph: false,
     gestureControl: false,
+    arOverlay: false,
+    voice: true,
   },
 };
 
