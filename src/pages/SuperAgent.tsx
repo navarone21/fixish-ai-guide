@@ -22,6 +22,7 @@ import { useHandTracking } from "@/hooks/useHandTracking";
 import { useCamera } from "@/hooks/useCamera";
 import { FixishClient } from "@/lib/FixishClient";
 import { useFeatureStore } from "@/state/featureStore";
+import { FixishAPI, analyzeImage, suggestEdits, analyzeVideoFrame } from "@/lib/fixishApi";
 
 // UI Components
 import { Navbar } from "@/components/landing/Navbar";
@@ -250,26 +251,36 @@ export default function SuperAgent() {
     setIsLoading(true);
 
     try {
-      const payload: any = {
-        prompt: currentInput || "Analyze this and provide repair guidance",
-        mode: "auto",
-        skill_level: skillLevel
-      };
-
-      if (currentMedia) {
-        const base64 = await fileToBase64(currentMedia.file);
-        payload.media = [{ name: currentMedia.file.name, type: currentMedia.file.type, data: base64 }];
+      let data: any;
+      
+      // Route to appropriate endpoint based on content
+      if (currentMedia && !currentInput.trim()) {
+        // Pure media upload - use analyze endpoints
+        if (currentMedia.type.startsWith("video") || currentMedia.file.type.startsWith("video")) {
+          data = await analyzeVideoFrame(currentMedia.file);
+          data.reply = data.frame_analysis || data.analysis || "Video frame analyzed.";
+        } else {
+          data = await analyzeImage(currentMedia.file);
+          data.reply = data.analysis || "Image analyzed.";
+        }
+      } else if (currentMedia && currentInput.trim()) {
+        // Media + prompt - use /edit for suggestions or /ask with media
+        if (currentInput.toLowerCase().includes("edit") || currentInput.toLowerCase().includes("fix") || currentInput.toLowerCase().includes("suggest")) {
+          data = await suggestEdits(currentMedia.file, currentInput);
+          data.reply = data.edited_image || data.suggestions?.join("\n") || "Here are my suggestions.";
+        } else {
+          // Use /ask with media
+          const base64 = await fileToBase64(currentMedia.file);
+          data = await FixishAPI.askSuperAgent(
+            currentInput || "Analyze this and provide repair guidance",
+            [{ name: currentMedia.file.name, type: currentMedia.file.type, data: base64 }],
+            skillLevel
+          );
+        }
+      } else {
+        // Text only - use /ask
+        data = await FixishAPI.askSuperAgent(currentInput, [], skillLevel);
       }
-
-      const response = await fetch("https://fix-ish-1.onrender.com/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("Failed to get response");
-
-      const data = await response.json();
       
       const assistantMessage: Message = {
         role: "assistant",
