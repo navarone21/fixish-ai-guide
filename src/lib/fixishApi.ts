@@ -1,123 +1,177 @@
-/* -------------------------------------------------
-   FIX-ISH BACKEND SYNC ENGINE
-   Centralized API wrapper for all modules
--------------------------------------------------- */
+const API_BASE = import.meta.env.VITE_FIXISH_API ?? "http://localhost:5050";
 
-const BASE = "https://fix-ish-1.onrender.com";
+async function handleResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
+  const payload = isJson ? await response.json() : await response.text();
 
-/* Low-level helpers */
-async function post(endpoint: string, body: any) {
-  const res = await fetch(`${BASE}${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return res.json();
+  if (!response.ok) {
+    const message = isJson
+      ? (payload as any)?.error || (payload as any)?.message || "Request failed"
+      : (payload as string) || response.statusText;
+    throw new Error(message);
+  }
+
+  return payload as T;
 }
 
-async function postFormData(endpoint: string, formData: FormData) {
-  const res = await fetch(`${BASE}${endpoint}`, {
+function buildUrl(path: string) {
+  return `${API_BASE}${path}`;
+}
+
+async function postJson<T>(path: string, body: unknown) {
+  const response = await fetch(buildUrl(path), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+
+  return handleResponse<T>(response);
+}
+
+async function postForm<T>(path: string, file: File, extraFields?: Record<string, string>) {
+  const formData = new FormData();
+  formData.append("file", file);
+  Object.entries(extraFields ?? {}).forEach(([key, value]) => {
+    formData.append(key, value);
+  });
+
+  const response = await fetch(buildUrl(path), {
     method: "POST",
     body: formData,
   });
-  return res.json();
+
+  return handleResponse<T>(response);
 }
 
-/* ----------------------- */
-/*  SUPER AGENT (chat)     */
-/* ----------------------- */
-export async function askSuperAgent(prompt: string, media: any[] = [], skillLevel: string = "intermediate") {
-  return await post("/ask", {
+async function getRequest<T>(path: string) {
+  const response = await fetch(buildUrl(path));
+  return handleResponse<T>(response);
+}
+
+export interface FixishInstructionPayload {
+  instruction?: string;
+  steps?: string[];
+  timeline?: {
+    past?: string[];
+    future?: string[];
+  };
+  warnings?: string[];
+  emotion?: {
+    label?: string;
+    guidance?: string;
+    confidence?: number;
+  };
+  tools?: Array<{ name: string; description?: string; confidence?: number }>;
+  overlays?: string[];
+  agents?: Array<{ name: string; message: string }>;
+}
+
+export interface TaskHistoryItem {
+  id: string;
+  name: string;
+  updatedAt: string;
+  status: string;
+}
+
+export const processImage = (file: File, metadata?: Record<string, string>) =>
+  postForm<FixishInstructionPayload>("/process/image", file, metadata);
+
+export const processVideo = (file: File, metadata?: Record<string, string>) =>
+  postForm<FixishInstructionPayload>("/process/video", file, metadata);
+
+export const processAudio = (file: File, metadata?: Record<string, string>) =>
+  postForm<FixishInstructionPayload>("/process/audio", file, metadata);
+
+export const processText = (prompt: string, context?: Record<string, unknown>) =>
+  postJson<FixishInstructionPayload>("/process/text", {
+    prompt,
+    ...context,
+  });
+
+export const startTask = (name: string) =>
+  postJson<{ taskId: string; name: string }>("/tasks/start", { name });
+
+export const continueTask = (payload?: Record<string, unknown>) =>
+  postJson<FixishInstructionPayload>("/tasks/continue", payload ?? {});
+
+export const fetchHistory = () =>
+  getRequest<{ tasks?: TaskHistoryItem[]; data?: TaskHistoryItem[] }>("/tasks/history");
+
+export const getOverlays = () =>
+  getRequest<{ overlays?: string[] }>("/overlays");
+
+export const fixishApi = {
+  processImage,
+  processVideo,
+  processAudio,
+  processText,
+  startTask,
+  continueTask,
+  fetchHistory,
+  getOverlays,
+};
+
+export type FixishApi = typeof fixishApi;
+
+// ---------------------------------------------------------------------------
+// Legacy helpers still used across the app (Super Agent, diagnostics, etc.)
+// ---------------------------------------------------------------------------
+
+export const askSuperAgent = (
+  prompt: string,
+  media: any[] = [],
+  skillLevel = "intermediate"
+) =>
+  postJson("/ask", {
     prompt,
     media,
     mode: "auto",
     skill_level: skillLevel,
   });
-}
 
-/* ----------------------- */
-/*  ANALYZE IMAGE          */
-/* ----------------------- */
-export async function analyzeImage(file: File): Promise<{ analysis: string }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  return await postFormData("/analyze-image", formData);
-}
+export const analyzeImage = (file: File) =>
+  postForm<{ analysis: string }>("/analyze-image", file);
 
-/* ----------------------- */
-/*  EDIT (suggestions)     */
-/* ----------------------- */
-export async function suggestEdits(file: File, prompt: string): Promise<{ edited_image: string; suggestions?: string[] }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("prompt", prompt);
-  return await postFormData("/edit", formData);
-}
+export const suggestEdits = (file: File, prompt: string) =>
+  postForm<{ edited_image: string; suggestions?: string[] }>("/edit", file, {
+    prompt,
+  });
 
-/* ----------------------- */
-/*  ANALYZE VIDEO FRAME    */
-/* ----------------------- */
-export async function analyzeVideoFrame(file: File): Promise<{ frame_analysis: string }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  return await postFormData("/analyze-video-frame", formData);
-}
+export const analyzeVideoFrame = (file: File) =>
+  postForm<{ frame_analysis: string }>("/analyze-video-frame", file);
 
-/* ----------------------- */
-/*  LIVE MODE (frames)     */
-/* ----------------------- */
-export async function analyzeFrame(base64Frame: string) {
-  return await post("/live", {
+export const analyzeFrame = (base64Frame: string) =>
+  postJson("/live", {
     frame: base64Frame,
     mode: "live",
   });
-}
 
-/* ----------------------- */
-/*  MESH RECONSTRUCTION    */
-/* ----------------------- */
-export async function fetchMesh(image: string) {
-  return await post("/mesh", {
+export const fetchMesh = (image: string) =>
+  postJson("/mesh", {
     input: image,
   });
-}
 
-/* ----------------------- */
-/*  SCENE GRAPH            */
-/* ----------------------- */
-export async function fetchSceneGraph(image: string) {
-  return await post("/scene", {
+export const fetchSceneGraph = (image: string) =>
+  postJson("/scene", {
     input: image,
   });
-}
 
-/* ----------------------- */
-/*  DIAGNOSTICS            */
-/* ----------------------- */
-export async function fetchDiagnostics(image: string) {
-  return await post("/diagnostics", {
+export const fetchDiagnostics = (image: string) =>
+  postJson("/diagnostics", {
     input: image,
   });
-}
 
-/* ----------------------- */
-/*  PROJECT HISTORY        */
-/* ----------------------- */
-export async function saveProjectToBackend(project: any) {
-  return await post("/history/save", {
+export const saveProjectToBackend = (project: any) =>
+  postJson("/history/save", {
     project,
   });
-}
 
-export async function loadProjectFromBackend(id: string) {
-  return await post("/history/load", {
+export const loadProjectFromBackend = (id: string) =>
+  postJson("/history/load", {
     id,
   });
-}
 
-/* ----------------------- */
-/*  EXPORT ALL             */
-/* ----------------------- */
 export const FixishAPI = {
   askSuperAgent,
   analyzeImage,

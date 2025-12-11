@@ -26,6 +26,9 @@ import DepthVision from "./pages/DepthVision";
 import ToolsPanel from "./pages/ToolsPanel";
 import ExplorePage from "./pages/ExplorePage";
 import FeatureToggles from "./pages/FeatureToggles";
+import Task from "./pages/Task";
+import TaskHistory from "./pages/TaskHistory";
+import ConsoleSettings from "./pages/ConsoleSettings";
 
 const queryClient = new QueryClient();
 
@@ -37,9 +40,11 @@ const App = () => (
       <MainThemeProvider>
         <FixishProvider backendUrl="https://operations-english-relates-invited.trycloudflare.com">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Task />} />
+            <Route path="/landing" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/super-agent" element={<SuperAgent />} />
+            <Route path="/task" element={<Task />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
@@ -53,12 +58,14 @@ const App = () => (
             <Route path="/diag" element={<Diagnostics />} />
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings-console" element={<ConsoleSettings />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/history" element={<TaskHistory />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </FixishProvider>
