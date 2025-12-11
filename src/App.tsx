@@ -26,6 +26,7 @@ import DepthVision from "./pages/DepthVision";
 import ToolsPanel from "./pages/ToolsPanel";
 import ExplorePage from "./pages/ExplorePage";
 import FeatureToggles from "./pages/FeatureToggles";
+import Task from "./pages/Task";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/super-agent" element={<SuperAgent />} />
+            <Route path="/task" element={<Task />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
