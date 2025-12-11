@@ -119,7 +119,7 @@ const Index = () => {
               Feedback
             </Button>
             <Button 
-              onClick={() => navigate("/task")}
+              onClick={() => navigate("/super-agent")}
               className="shadow-md"
             >
               Launch App
@@ -214,7 +214,7 @@ const Index = () => {
             >
               <Button 
                 size="lg"
-                onClick={() => navigate("/task")}
+                onClick={() => navigate("/super-agent")}
                 className="shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:shadow-2xl relative overflow-hidden group"
               >
                 <motion.span
