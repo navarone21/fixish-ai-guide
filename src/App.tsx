@@ -38,7 +38,8 @@ const App = () => (
       <MainThemeProvider>
         <FixishProvider backendUrl="https://operations-english-relates-invited.trycloudflare.com">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Task />} />
+            <Route path="/landing" element={<Index />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/super-agent" element={<SuperAgent />} />
             <Route path="/task" element={<Task />} />

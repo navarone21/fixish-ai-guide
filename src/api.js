@@ -1,4 +1,6 @@
-const BASE_URL = "http://localhost:5050";
+const BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_FIXISH_API) ||
+  "http://localhost:5050";
 
 async function handleResponse(response) {
   const contentType = response.headers.get("content-type");
