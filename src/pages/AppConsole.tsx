@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, DragEvent } from "react";
+import hummingbirdLogo from "@/assets/hummingbird-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { FixishAPI } from "@/lib/fixishApi";
@@ -23,7 +24,7 @@ import {
   Shield,
   Cpu,
   Camera,
-  Brain,
+  
   Zap,
   ArrowLeft,
   Plus,
@@ -338,7 +339,7 @@ export default function AppConsole() {
         case 'audio': return Waves;
         case 'memory': return Cpu;
         case 'diagram': return BarChart3;
-        default: return Brain;
+        default: return Cpu;
       }
     };
     const Icon = getModuleIcon();
@@ -543,7 +544,7 @@ export default function AppConsole() {
                 } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                <Brain className="h-3 w-3 text-primary" />
+                <img src={hummingbirdLogo} alt="Fix-ISH" className="h-4 w-4 object-contain" />
               </motion.div>
               <span className="text-xs font-semibold">FIX-ISH AGI</span>
             </div>
@@ -672,7 +673,7 @@ export default function AppConsole() {
                         transition={{ duration: 4, repeat: Infinity }}
                       />
                       <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center border border-primary/10">
-                        <Brain className="h-8 w-8 text-primary/40" />
+                        <img src={hummingbirdLogo} alt="Fix-ISH" className="h-10 w-10 object-contain opacity-60" />
                       </div>
                     </motion.div>
                     
