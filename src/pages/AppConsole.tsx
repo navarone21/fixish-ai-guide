@@ -54,7 +54,7 @@ interface Message {
   reasoning?: string;
   futureMemory?: string[];
   overlays?: any[];
-  emotion?: string;
+  emotion?: { label: string; confidence: number };
   isExpanded?: boolean;
 }
 
@@ -894,7 +894,10 @@ export default function AppConsole() {
                                       <Waves className="h-3.5 w-3.5 text-primary" />
                                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Audio Emotion</p>
                                     </div>
-                                    <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary">{msg.emotion}</Badge>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary">{msg.emotion.label}</Badge>
+                                      <span className="text-[10px] text-muted-foreground">{Math.round(msg.emotion.confidence * 100)}% confidence</span>
+                                    </div>
                                   </motion.div>
                                 )}
 
