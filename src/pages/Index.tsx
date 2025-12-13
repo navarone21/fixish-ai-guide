@@ -379,7 +379,7 @@ const Index = () => {
                 </li>
               </ul>
               <Button 
-                onClick={() => navigate("/chat")}
+                onClick={() => navigate("/task")}
                 className="w-full" 
                 variant="outline"
               >
@@ -428,7 +428,7 @@ const Index = () => {
                 </li>
               </ul>
               <Button 
-                onClick={() => navigate("/chat")}
+                onClick={() => navigate("/task")}
                 className="w-full"
               >
                 Get Started
