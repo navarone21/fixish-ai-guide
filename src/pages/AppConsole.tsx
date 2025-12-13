@@ -1,52 +1,39 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { FixishAPI } from "@/lib/fixishApi";
 import { useFixishConsoleStore } from "@/state/useFixishConsoleStore";
 
-// UI Components
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { 
-  Brain, 
   Send, 
   Image as ImageIcon, 
   Video, 
   Mic, 
-  Upload,
   Wrench,
   Clock,
   AlertTriangle,
-  CheckCircle2,
   Loader2,
-  Volume2,
-  ArrowLeft,
-  Layers,
-  Zap,
-  Target,
-  Eye,
-  Activity,
-  Sparkles,
-  Shield,
-  TrendingUp,
   X,
   ChevronRight,
+  ChevronDown,
   Bot,
   User,
+  Eye,
+  Shield,
   Cpu,
-  Radio,
-  Waves,
-  ScanLine,
-  CircuitBoard,
-  Radar,
-  Gauge,
-  BrainCircuit,
-  Lightbulb,
-  Triangle,
-  Camera
+  Paperclip,
+  Camera,
+  Sparkles,
+  History,
+  FolderOpen,
+  Zap,
+  Circle,
+  MoreHorizontal,
+  ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -55,211 +42,128 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  media?: { type: string; url: string; name?: string };
+  media?: { type: string; url: string; name?: string }[];
   steps?: string[];
   tools?: string[];
   warnings?: string[];
-  overlays?: any[];
-  emotion?: { label: string; confidence: number };
-  agents?: string[];
   reasoning?: string;
   futureMemory?: string[];
+  isExpanded?: boolean;
 }
 
-interface ToolWithConfidence {
-  name: string;
-  confidence: number;
-}
-
-// Animated background grid
-const GridBackground = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black_40%,transparent_100%)]" />
-    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-  </div>
-);
-
-// Glowing card component
-const GlowCard = ({ children, className = "", glow = false, active = false }: { children: React.ReactNode; className?: string; glow?: boolean; active?: boolean }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className={`relative rounded-xl border backdrop-blur-xl transition-all duration-500 ${
-      active 
-        ? 'bg-gradient-to-br from-primary/20 via-background/80 to-cyan-500/10 border-primary/50 shadow-[0_0_30px_rgba(0,255,255,0.15)]' 
-        : 'bg-background/40 border-border/50 hover:border-primary/30 hover:bg-background/60'
-    } ${glow ? 'shadow-[0_0_20px_rgba(0,255,255,0.1)]' : ''} ${className}`}
-  >
-    {active && (
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse" />
-    )}
-    {children}
-  </motion.div>
-);
-
-// AGI Thinking indicator
-const AGIThinking = () => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="flex items-center gap-4 p-4"
-  >
-    <div className="relative">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        className="h-12 w-12 rounded-full border-2 border-primary/30 border-t-primary"
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <BrainCircuit className="h-5 w-5 text-primary animate-pulse" />
-      </div>
-    </div>
-    <div className="space-y-2 flex-1">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-primary">AGI Processing</span>
-        <motion.span
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-xs text-muted-foreground"
-        >
-          analyzing multimodal input...
-        </motion.span>
-      </div>
-      <div className="flex gap-1">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <motion.div
-            key={i}
-            animate={{ scaleY: [1, 2, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-            className="w-1 h-3 bg-gradient-to-t from-primary/50 to-primary rounded-full"
-          />
-        ))}
-      </div>
-    </div>
-  </motion.div>
-);
-
-// Status indicator
-const StatusIndicator = ({ label, status, icon: Icon }: { label: string; status: "active" | "idle" | "processing"; icon: any }) => (
-  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/30 border border-border/30">
-    <div className={`relative ${status === 'processing' ? 'animate-pulse' : ''}`}>
-      <Icon className={`h-4 w-4 ${status === 'active' ? 'text-emerald-400' : status === 'processing' ? 'text-primary' : 'text-muted-foreground'}`} />
-      {status === 'active' && (
-        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-      )}
-    </div>
-    <span className="text-xs text-muted-foreground">{label}</span>
-  </div>
-);
+// Soft spring animation
+const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
 
 export default function AppConsole() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const store = useFixishConsoleStore();
   
-  // Chat state
+  // Layout
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showIntelligence, setShowIntelligence] = useState(true);
+  
+  // Chat
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [mediaPreview, setMediaPreview] = useState<{ type: string; url: string; file: File } | null>(null);
+  const [mediaQueue, setMediaQueue] = useState<{ type: string; url: string; file: File; name: string }[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   
-  // Backend status
-  const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
-  
-  // Active systems
-  const [activeSystems, setActiveSystems] = useState({
-    vision: false,
-    memory: false,
-    tools: false,
-    safety: false
-  });
+  // Backend
+  const [status, setStatus] = useState({ vision: false, tools: false, memory: false, safety: false });
+  const [isOnline, setIsOnline] = useState(false);
   
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check backend health
   useEffect(() => {
     checkHealth();
     const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll chat
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   const checkHealth = async () => {
-    setBackendStatus("checking");
     try {
       await FixishAPI.getHealth();
-      setBackendStatus("online");
+      setIsOnline(true);
     } catch {
-      setBackendStatus("offline");
+      setIsOnline(false);
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const fileToBase64 = (file: File): Promise<string> => 
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      const url = URL.createObjectURL(file);
+      const type = file.type.split('/')[0];
+      setMediaQueue(prev => [...prev, { type, url, file, name: file.name }]);
+    });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setMediaPreview({ type, url, file });
-    e.target.value = "";
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
   };
 
-  // Send message to AGI
-  const handleSendMessage = async () => {
-    if (!input.trim() && !mediaPreview) return;
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) handleFiles(new DataTransfer().files);
+        const url = URL.createObjectURL(file!);
+        setMediaQueue(prev => [...prev, { type: 'image', url, file: file!, name: 'Pasted image' }]);
+      }
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaQueue(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() && mediaQueue.length === 0) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input || "[Media Uploaded]",
+      content: input || "",
       timestamp: new Date(),
-      media: mediaPreview ? { type: mediaPreview.type, url: mediaPreview.url, name: mediaPreview.file.name } : undefined
+      media: mediaQueue.map(m => ({ type: m.type, url: m.url, name: m.name }))
     };
 
     setMessages(prev => [...prev, userMessage]);
     const currentInput = input;
+    const currentMedia = [...mediaQueue];
     setInput("");
-    const currentMedia = mediaPreview;
-    setMediaPreview(null);
+    setMediaQueue([]);
     setIsLoading(true);
-    
-    // Activate systems based on input
-    setActiveSystems({
-      vision: !!currentMedia,
-      memory: true,
-      tools: true,
-      safety: true
-    });
+    setStatus({ vision: currentMedia.length > 0, tools: true, memory: true, safety: true });
 
     try {
       let imageBase64: string | undefined;
       let audioBase64: string | undefined;
       
-      if (currentMedia) {
-        const base64 = await fileToBase64(currentMedia.file);
-        if (currentMedia.type.includes("image")) {
-          imageBase64 = base64;
-        } else if (currentMedia.type.includes("audio")) {
-          audioBase64 = base64;
-        }
+      for (const media of currentMedia) {
+        const base64 = await fileToBase64(media.file);
+        if (media.type === 'image') imageBase64 = base64;
+        else if (media.type === 'audio') audioBase64 = base64;
       }
 
       const result = await FixishAPI.process({
@@ -277,824 +181,566 @@ export default function AppConsole() {
         steps: result.steps,
         tools: result.predicted_tools,
         warnings: result.warnings,
-        overlays: result.overlays,
-        emotion: result.emotion,
-        agents: result.agent_messages,
-        reasoning: "Multi-agent reasoning applied",
-        futureMemory: result.timeline?.future?.map((f: any) => typeof f === 'string' ? f : JSON.stringify(f))
+        reasoning: result.agent_messages?.join(" ") || undefined,
+        futureMemory: result.timeline?.future?.map((f: any) => typeof f === 'string' ? f : JSON.stringify(f)),
+        isExpanded: false
       };
 
       setMessages(prev => [...prev, assistantMessage]);
       store.setProcessResult(result);
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Connection Error", description: error.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
-      setTimeout(() => setActiveSystems({ vision: false, memory: false, tools: false, safety: false }), 2000);
+      setTimeout(() => setStatus({ vision: false, tools: false, memory: false, safety: false }), 1500);
     }
   };
 
-  // Direct upload handlers
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    store.setUploadedImage(URL.createObjectURL(file));
-    store.setUploadingImage(true);
-    setActiveSystems(prev => ({ ...prev, vision: true }));
-    
-    try {
-      const result = await FixishAPI.uploadImage(file);
-      store.setImageResult(result);
-      toast({ title: "Vision Analysis Complete" });
-    } catch (err: any) {
-      store.setError(err.message);
-      toast({ title: "Upload failed", variant: "destructive" });
-    } finally {
-      store.setUploadingImage(false);
-      setTimeout(() => setActiveSystems(prev => ({ ...prev, vision: false })), 2000);
-    }
-  }, [toast, store]);
-
-  const handleVideoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    store.setUploadingImage(true);
-    setActiveSystems(prev => ({ ...prev, vision: true }));
-    
-    try {
-      const result = await FixishAPI.uploadVideo(file);
-      store.setImageResult(result as any);
-      toast({ title: "Video Analysis Complete" });
-    } catch (err: any) {
-      store.setError(err.message);
-      toast({ title: "Upload failed", variant: "destructive" });
-    } finally {
-      store.setUploadingImage(false);
-      setTimeout(() => setActiveSystems(prev => ({ ...prev, vision: false })), 2000);
-    }
-  }, [toast, store]);
-
-  const handleAudioUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    store.setUploadedAudio(URL.createObjectURL(file));
-    store.setUploadingAudio(true);
-    
-    try {
-      const result = await FixishAPI.uploadAudio(file);
-      store.setAudioResult(result);
-      toast({ title: "Audio Analysis Complete" });
-    } catch (err: any) {
-      store.setError(err.message);
-      toast({ title: "Upload failed", variant: "destructive" });
-    } finally {
-      store.setUploadingAudio(false);
-    }
-  }, [toast, store]);
-
-  const handlePredictTools = useCallback(async () => {
+  const handlePredictTools = async () => {
     store.setPredictingTools(true);
-    setActiveSystems(prev => ({ ...prev, tools: true }));
+    setStatus(prev => ({ ...prev, tools: true }));
     try {
       const result = await FixishAPI.predictTools({ context: store.processResult });
       store.setToolResult(result);
-      toast({ title: "Tools Predicted" });
     } catch (err: any) {
-      store.setError(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       store.setPredictingTools(false);
-      setTimeout(() => setActiveSystems(prev => ({ ...prev, tools: false })), 2000);
+      setTimeout(() => setStatus(prev => ({ ...prev, tools: false })), 1500);
     }
-  }, [store, toast]);
+  };
 
-  const handlePredictFuture = useCallback(async () => {
+  const handlePredictFuture = async () => {
     store.setPredictingFuture(true);
-    setActiveSystems(prev => ({ ...prev, memory: true }));
+    setStatus(prev => ({ ...prev, memory: true }));
     try {
       const result = await FixishAPI.getFuture({ context: store.processResult });
       store.setFutureResult(result);
-      toast({ title: "Future Memory Retrieved" });
     } catch (err: any) {
-      store.setError(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       store.setPredictingFuture(false);
-      setTimeout(() => setActiveSystems(prev => ({ ...prev, memory: false })), 2000);
+      setTimeout(() => setStatus(prev => ({ ...prev, memory: false })), 1500);
     }
-  }, [store, toast]);
-
-  const parseTools = (tools: any): ToolWithConfidence[] => {
-    if (!tools) return [];
-    if (Array.isArray(tools)) {
-      return tools.map((t: any) => {
-        if (typeof t === 'string') return { name: t, confidence: 75 + Math.random() * 25 };
-        return { name: t.name || t.tool || String(t), confidence: t.confidence || 75 + Math.random() * 25 };
-      });
-    }
-    return [];
   };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden relative">
-      <GridBackground />
-      
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/50">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="hover:bg-primary/10">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <motion.div 
-                animate={{ boxShadow: backendStatus === 'online' ? ['0 0 20px rgba(0,255,255,0.3)', '0 0 40px rgba(0,255,255,0.1)', '0 0 20px rgba(0,255,255,0.3)'] : 'none' }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-cyan-500 to-primary flex items-center justify-center"
-              >
-                <BrainCircuit className="h-5 w-5 text-background" />
-              </motion.div>
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-primary via-cyan-400 to-primary bg-clip-text text-transparent">
-                  FIX-ISH AGI
-                </h1>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Unified Intelligence Console</p>
-              </div>
-            </div>
-          </div>
-          
-          {/* System Status Indicators */}
-          <div className="hidden lg:flex items-center gap-2">
-            <StatusIndicator label="Vision" status={activeSystems.vision ? 'active' : 'idle'} icon={Eye} />
-            <StatusIndicator label="Memory" status={activeSystems.memory ? 'processing' : 'idle'} icon={Cpu} />
-            <StatusIndicator label="Tools" status={activeSystems.tools ? 'active' : 'idle'} icon={Wrench} />
-            <StatusIndicator label="Safety" status={activeSystems.safety ? 'active' : 'idle'} icon={Shield} />
-          </div>
+  const toggleMessageExpanded = (id: string) => {
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, isExpanded: !m.isExpanded } : m));
+  };
 
-          <motion.div
-            animate={{ scale: backendStatus === 'online' ? [1, 1.05, 1] : 1 }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Badge 
-              className={`px-4 py-1.5 ${
-                backendStatus === "online" 
-                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]" 
-                  : "bg-red-500/20 text-red-400 border-red-500/50"
-              }`}
-            >
-              <Radio className={`h-3 w-3 mr-2 ${backendStatus === 'online' ? 'animate-pulse' : ''}`} />
-              {backendStatus === "online" ? "SYSTEM ONLINE" : backendStatus === "checking" ? "CONNECTING..." : "OFFLINE"}
-            </Badge>
-          </motion.div>
+  const StatusDot = ({ active, label }: { active: boolean; label: string }) => (
+    <div className="flex items-center gap-1.5 px-2 py-1">
+      <motion.div
+        animate={{ scale: active ? [1, 1.2, 1] : 1, opacity: active ? 1 : 0.4 }}
+        transition={{ duration: 0.5, repeat: active ? Infinity : 0 }}
+        className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-muted-foreground/40'}`}
+      />
+      <span className={`text-[11px] font-medium ${active ? 'text-foreground' : 'text-muted-foreground/60'}`}>{label}</span>
+    </div>
+  );
+
+  return (
+    <div 
+      className="h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/20 overflow-hidden"
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+    >
+      {/* Minimal Header */}
+      <header className="h-12 flex items-center justify-between px-4 border-b border-border/40 bg-background/80 backdrop-blur-2xl shrink-0">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 rounded-lg">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-semibold text-foreground">Fix-ISH</span>
+        </div>
+        
+        <div className="flex items-center gap-1 bg-muted/40 rounded-full px-1">
+          <StatusDot active={status.vision} label="Vision" />
+          <StatusDot active={status.tools} label="Tools" />
+          <StatusDot active={status.memory} label="Memory" />
+          <StatusDot active={status.safety} label="Safety" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${isOnline ? 'border-emerald-500/40 text-emerald-500' : 'border-red-500/40 text-red-500'}`}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Badge>
         </div>
       </header>
 
-      {/* Main Content - 3 Column Layout */}
-      <main className="flex h-[calc(100vh-65px)] relative">
-        
-        {/* LEFT PANEL - Multimodal Inputs */}
-        <aside className="w-72 border-r border-border/30 bg-background/30 backdrop-blur-xl hidden md:flex flex-col">
-          <div className="p-4 border-b border-border/30">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <ScanLine className="h-4 w-4 text-primary" />
-              Multimodal Input
-            </h2>
-          </div>
-          
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              
-              {/* Image Upload */}
-              <GlowCard active={store.isUploadingImage || !!store.uploadedImage}>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Vision Input</span>
-                    </div>
-                    {store.isUploadingImage && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                  </div>
-                  <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageUpload} className="hidden" />
-                  <motion.div 
-                    whileHover={{ scale: 1.02, borderColor: 'hsl(var(--primary))' }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => imageInputRef.current?.click()}
-                    className="border-2 border-dashed border-border/50 rounded-xl p-4 text-center cursor-pointer transition-all hover:bg-primary/5"
-                  >
-                    {store.uploadedImage ? (
-                      <img src={store.uploadedImage} alt="" className="max-h-24 mx-auto rounded-lg" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground py-2">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Upload className="h-5 w-5 text-primary" />
-                        </div>
-                        <span className="text-xs">Drop or click to upload</span>
-                      </div>
-                    )}
-                  </motion.div>
-                  {store.imageResult?.analysis && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="text-xs p-3 rounded-lg bg-gradient-to-r from-primary/10 to-transparent border border-primary/20"
-                    >
-                      <p className="text-muted-foreground">{store.imageResult.analysis}</p>
-                    </motion.div>
-                  )}
-                </div>
-              </GlowCard>
-
-              {/* Video Upload */}
-              <GlowCard>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Video className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Video Input</span>
-                  </div>
-                  <input type="file" accept="video/*" ref={videoInputRef} onChange={handleVideoUpload} className="hidden" />
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => videoInputRef.current?.click()}
-                    className="w-full border-border/50 hover:border-primary/50 hover:bg-primary/5"
-                    disabled={store.isUploadingImage}
-                  >
-                    {store.isUploadingImage ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Video className="h-4 w-4 mr-2" />}
-                    Upload Video
-                  </Button>
-                </div>
-              </GlowCard>
-
-              {/* Audio Upload */}
-              <GlowCard active={!!store.audioResult?.emotion}>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Waves className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Audio / Emotion</span>
-                  </div>
-                  <input type="file" accept="audio/*" ref={audioInputRef} onChange={handleAudioUpload} className="hidden" />
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => audioInputRef.current?.click()}
-                    className="w-full border-border/50 hover:border-primary/50 hover:bg-primary/5"
-                    disabled={store.isUploadingAudio}
-                  >
-                    {store.isUploadingAudio ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mic className="h-4 w-4 mr-2" />}
-                    Upload Audio
-                  </Button>
-                  {store.audioResult?.emotion && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-2 p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Detected Emotion</span>
-                        <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                          {store.audioResult.emotion.label}
-                        </Badge>
-                      </div>
-                      <div className="relative h-2 rounded-full bg-background/50 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${store.audioResult.emotion.confidence * 100}%` }}
-                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-primary rounded-full"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              </GlowCard>
-
-              {/* Live AR Placeholder */}
-              <GlowCard>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Camera className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-muted-foreground">Live AR</span>
-                    <Badge variant="outline" className="text-[10px] ml-auto">Coming Soon</Badge>
-                  </div>
-                  <div className="h-20 rounded-lg bg-muted/20 border border-dashed border-muted-foreground/20 flex items-center justify-center">
-                    <Radar className="h-8 w-8 text-muted-foreground/30" />
-                  </div>
-                </div>
-              </GlowCard>
-
-              {/* Quick Actions */}
-              <div className="pt-4 border-t border-border/30 space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                  <Zap className="h-3 w-3" />
-                  Quick Actions
-                </h3>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button 
-                    onClick={handlePredictTools} 
-                    disabled={store.isPredictingTools || backendStatus !== "online"}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start border-border/50 hover:border-primary/50 hover:bg-primary/5"
-                  >
-                    {store.isPredictingTools ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wrench className="h-4 w-4 mr-2 text-primary" />}
-                    Predict Tools
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button 
-                    onClick={handlePredictFuture} 
-                    disabled={store.isPredictingFuture || backendStatus !== "online"}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start border-border/50 hover:border-primary/50 hover:bg-primary/5"
-                  >
-                    {store.isPredictingFuture ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Clock className="h-4 w-4 mr-2 text-primary" />}
-                    Future Memory
-                  </Button>
-                </motion.div>
-              </div>
+      {/* Drag overlay */}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-primary/40 rounded-xl m-4"
+          >
+            <div className="text-center">
+              <Paperclip className="h-12 w-12 text-primary mx-auto mb-3" />
+              <p className="text-lg font-medium text-primary">Drop files here</p>
+              <p className="text-sm text-muted-foreground">Images, videos, audio, documents</p>
             </div>
-          </ScrollArea>
-        </aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* CENTER - AGI Feed */}
-        <div className="flex-1 flex flex-col min-w-0 bg-gradient-to-b from-background/0 via-background/50 to-background/80">
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-            <div className="max-w-3xl mx-auto space-y-6">
-              {messages.length === 0 && !isLoading && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="text-center py-20"
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.aside
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 240, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={spring}
+              className="border-r border-border/40 bg-muted/20 backdrop-blur-xl flex flex-col overflow-hidden shrink-0"
+            >
+              <div className="p-3 space-y-1">
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-9 text-xs font-normal">
+                  <History className="h-3.5 w-3.5 text-muted-foreground" />
+                  Recent Sessions
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 h-9 text-xs font-normal">
+                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  Saved Projects
+                </Button>
+              </div>
+              
+              <div className="border-t border-border/40 p-3 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 px-2 mb-2">Quick Actions</p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handlePredictTools}
+                  disabled={store.isPredictingTools}
+                  className="w-full justify-start gap-2 h-9 text-xs font-normal"
                 >
-                  <motion.div
-                    animate={{ 
-                      boxShadow: ['0 0 40px rgba(0,255,255,0.2)', '0 0 80px rgba(0,255,255,0.1)', '0 0 40px rgba(0,255,255,0.2)']
-                    }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="h-24 w-24 rounded-3xl bg-gradient-to-br from-primary/30 via-cyan-500/20 to-primary/10 flex items-center justify-center mx-auto mb-6 border border-primary/30"
-                  >
-                    <BrainCircuit className="h-12 w-12 text-primary" />
-                  </motion.div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-primary via-cyan-400 to-primary bg-clip-text text-transparent mb-3">
-                    Fix-ISH AGI Ready
-                  </h2>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Enter a prompt, upload media, or use the sidebar tools to begin multimodal analysis.
-                  </p>
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      <span>100 subsystems active</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-                      <span>Multimodal ready</span>
-                    </div>
-                  </div>
-                </motion.div>
+                  {store.isPredictingTools ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5 text-muted-foreground" />}
+                  Predict Tools
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handlePredictFuture}
+                  disabled={store.isPredictingFuture}
+                  className="w-full justify-start gap-2 h-9 text-xs font-normal"
+                >
+                  {store.isPredictingFuture ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
+                  Future Memory
+                </Button>
+              </div>
+
+              <div className="flex-1" />
+              
+              <div className="border-t border-border/40 p-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full justify-start gap-2 h-9 text-xs font-normal text-muted-foreground"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Live AR
+                  <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0">Initializing</Badge>
+                </Button>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col min-w-0 relative">
+          {/* Toggle buttons */}
+          <div className="absolute top-2 left-2 z-10">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="h-7 w-7 rounded-md bg-background/60 backdrop-blur-sm"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="absolute top-2 right-2 z-10">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowIntelligence(!showIntelligence)}
+              className="h-7 w-7 rounded-md bg-background/60 backdrop-blur-sm"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {/* Messages */}
+          <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
+            <div className="max-w-2xl mx-auto space-y-4">
+              {messages.length === 0 && !isLoading && (
+                <div className="text-center py-24 text-muted-foreground/60">
+                  <p className="text-sm">Start a conversation</p>
+                </div>
               )}
 
               <AnimatePresence mode="popLayout">
-                {messages.map((msg, idx) => (
+                {messages.map((msg) => (
                   <motion.div
                     key={msg.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={spring}
                     layout
-                    className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {msg.role === 'assistant' && (
-                      <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/30"
-                      >
-                        <Bot className="h-5 w-5 text-background" />
-                      </motion.div>
-                    )}
-                    <GlowCard 
-                      className={`max-w-[75%] ${msg.role === 'user' ? 'bg-gradient-to-br from-primary/20 to-cyan-500/10' : ''}`}
-                      glow={msg.role === 'assistant'}
-                    >
-                      <div className="p-4 space-y-3">
-                        {/* Media */}
-                        {msg.media && (
-                          <div className="mb-3 rounded-lg overflow-hidden">
-                            {msg.media.type.includes('image') && (
-                              <img src={msg.media.url} alt="" className="max-h-48 rounded-lg" />
-                            )}
-                            {msg.media.type.includes('video') && (
-                              <video src={msg.media.url} controls className="max-h-48 rounded-lg" />
-                            )}
-                            {msg.media.type.includes('audio') && (
-                              <audio src={msg.media.url} controls className="w-full" />
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Main content */}
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        
-                        {/* Reasoning */}
-                        {msg.role === 'assistant' && msg.reasoning && (
-                          <div className="flex items-center gap-2 text-xs text-cyan-400 bg-cyan-500/10 rounded-lg px-3 py-2">
-                            <Lightbulb className="h-3 w-3" />
-                            <span>{msg.reasoning}</span>
-                          </div>
-                        )}
-                        
-                        {/* Steps */}
-                        {msg.steps && msg.steps.length > 0 && (
-                          <div className="space-y-2 pt-3 border-t border-border/30">
-                            <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                              <Layers className="h-3 w-3" />
-                              Step-by-Step Plan
-                            </div>
-                            {msg.steps.map((step, i) => (
-                              <motion.div 
-                                key={i} 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="flex items-start gap-3 text-sm"
-                              >
-                                <span className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/30 to-cyan-500/20 text-primary text-xs flex items-center justify-center flex-shrink-0 border border-primary/30">
-                                  {i + 1}
-                                </span>
-                                <span className="pt-0.5">{step}</span>
-                              </motion.div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Warnings */}
-                        {msg.warnings && msg.warnings.length > 0 && (
-                          <div className="space-y-1 pt-3 border-t border-border/30">
-                            {msg.warnings.map((w, i) => (
-                              <div key={i} className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 rounded-lg px-3 py-2">
-                                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-                                <span>{w}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Tools */}
-                        {msg.tools && msg.tools.length > 0 && (
-                          <div className="pt-3 border-t border-border/30">
-                            <div className="flex items-center gap-2 text-xs font-medium text-primary mb-2">
-                              <Wrench className="h-3 w-3" />
-                              Recommended Tools
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {msg.tools.map((tool, i) => (
-                                <Badge key={i} className="bg-primary/10 text-primary border-primary/30 text-xs">
-                                  {tool}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Future Memory */}
-                        {msg.futureMemory && msg.futureMemory.length > 0 && (
-                          <div className="pt-3 border-t border-border/30">
-                            <div className="flex items-center gap-2 text-xs font-medium text-cyan-400 mb-2">
-                              <Clock className="h-3 w-3" />
-                              Future Memory
-                            </div>
-                            <div className="space-y-1">
-                              {msg.futureMemory.map((f, i) => (
-                                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                  <ChevronRight className="h-3 w-3 mt-0.5 text-cyan-500" />
-                                  <span>{f}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Emotion */}
-                        {msg.emotion && (
-                          <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                            <span className="text-xs text-muted-foreground">Detected Emotion</span>
-                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                              {msg.emotion.label} ({Math.round(msg.emotion.confidence * 100)}%)
-                            </Badge>
-                          </div>
-                        )}
+                      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                        <Bot className="h-3.5 w-3.5 text-primary" />
                       </div>
-                    </GlowCard>
+                    )}
+                    
+                    <div className={`max-w-[85%] space-y-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      {/* Media */}
+                      {msg.media && msg.media.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {msg.media.map((m, i) => (
+                            <div key={i} className="rounded-xl overflow-hidden border border-border/40">
+                              {m.type === 'image' && <img src={m.url} alt="" className="max-h-40 object-cover" />}
+                              {m.type === 'video' && <video src={m.url} controls className="max-h-40" />}
+                              {m.type === 'audio' && <audio src={m.url} controls className="w-48" />}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Content bubble */}
+                      {msg.content && (
+                        <div className={`rounded-2xl px-4 py-2.5 ${
+                          msg.role === 'user' 
+                            ? 'bg-primary text-primary-foreground rounded-br-md' 
+                            : 'bg-muted/60 backdrop-blur-sm border border-border/40 rounded-bl-md'
+                        }`}>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      )}
+
+                      {/* Expandable details for assistant */}
+                      {msg.role === 'assistant' && (msg.steps || msg.tools || msg.reasoning || msg.warnings || msg.futureMemory) && (
+                        <div className="space-y-2 w-full">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => toggleMessageExpanded(msg.id)}
+                            className="h-7 text-[11px] text-muted-foreground gap-1 px-2"
+                          >
+                            {msg.isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            {msg.isExpanded ? 'Hide details' : 'Show reasoning & tools'}
+                          </Button>
+
+                          <AnimatePresence>
+                            {msg.isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={spring}
+                                className="overflow-hidden space-y-3"
+                              >
+                                {msg.reasoning && (
+                                  <div className="bg-muted/40 rounded-xl p-3 border border-border/30">
+                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Reasoning</p>
+                                    <p className="text-xs text-muted-foreground">{msg.reasoning}</p>
+                                  </div>
+                                )}
+
+                                {msg.steps && msg.steps.length > 0 && (
+                                  <div className="bg-muted/40 rounded-xl p-3 border border-border/30">
+                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-2">Steps</p>
+                                    <div className="space-y-1.5">
+                                      {msg.steps.map((step, i) => (
+                                        <div key={i} className="flex items-start gap-2 text-xs">
+                                          <span className="h-4 w-4 rounded-full bg-primary/10 text-primary text-[10px] flex items-center justify-center shrink-0">{i + 1}</span>
+                                          <span className="text-muted-foreground">{step}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {msg.tools && msg.tools.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {msg.tools.map((tool, i) => (
+                                      <Badge key={i} variant="secondary" className="text-[10px] font-normal">{tool}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {msg.warnings && msg.warnings.length > 0 && (
+                                  <div className="space-y-1">
+                                    {msg.warnings.map((w, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded-lg px-3 py-1.5">
+                                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                                        <span>{w}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {msg.futureMemory && msg.futureMemory.length > 0 && (
+                                  <div className="bg-muted/40 rounded-xl p-3 border border-border/30">
+                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-2">Future Memory</p>
+                                    <div className="space-y-1">
+                                      {msg.futureMemory.map((f, i) => (
+                                        <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                                          <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                                          <span>{f}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+
                     {msg.role === 'user' && (
-                      <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center flex-shrink-0 border border-border/50">
-                        <User className="h-5 w-5 text-muted-foreground" />
+                      <div className="h-7 w-7 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     )}
                   </motion.div>
                 ))}
               </AnimatePresence>
 
-              {isLoading && <AGIThinking />}
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex gap-3"
+                >
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <Bot className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Thinking...</span>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </ScrollArea>
 
-          {/* Input Area */}
-          <div className="border-t border-border/30 bg-background/60 backdrop-blur-xl p-4">
-            <div className="max-w-3xl mx-auto">
-              {/* Media Preview */}
+          {/* Unified Input */}
+          <div className="p-4 bg-gradient-to-t from-background via-background to-transparent">
+            <div className="max-w-2xl mx-auto">
+              {/* Media queue */}
               <AnimatePresence>
-                {mediaPreview && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="mb-3 relative inline-block"
+                {mediaQueue.length > 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="flex flex-wrap gap-2 mb-3"
                   >
-                    <div className="rounded-xl overflow-hidden border border-primary/30 shadow-lg shadow-primary/10">
-                      {mediaPreview.type.includes('image') && (
-                        <img src={mediaPreview.url} alt="" className="h-20 object-cover" />
-                      )}
-                      {mediaPreview.type.includes('video') && (
-                        <video src={mediaPreview.url} className="h-20" />
-                      )}
-                      {mediaPreview.type.includes('audio') && (
-                        <div className="h-20 w-32 bg-gradient-to-br from-primary/20 to-cyan-500/10 flex items-center justify-center">
-                          <Waves className="h-6 w-6 text-primary" />
+                    {mediaQueue.map((media, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="relative group"
+                      >
+                        <div className="h-16 w-16 rounded-xl overflow-hidden border border-border/40 bg-muted/40">
+                          {media.type === 'image' && <img src={media.url} alt="" className="h-full w-full object-cover" />}
+                          {media.type === 'video' && <video src={media.url} className="h-full w-full object-cover" />}
+                          {media.type === 'audio' && (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Mic className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                      onClick={() => setMediaPreview(null)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+                        <button
+                          onClick={() => removeMedia(i)}
+                          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </motion.div>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
-              
-              <div className="flex gap-3 items-end">
-                <div className="flex gap-1 pb-1">
-                  <input type="file" accept="image/*" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
-                  <input type="file" accept="video/*" ref={videoInputRef} onChange={(e) => handleFileChange(e, 'video')} className="hidden" />
-                  <input type="file" accept="audio/*" ref={audioInputRef} onChange={(e) => handleFileChange(e, 'audio')} className="hidden" />
-                  <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10">
-                    <ImageIcon className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()} className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10">
-                    <Video className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => audioInputRef.current?.click()} className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10">
-                    <Mic className="h-5 w-5" />
-                  </Button>
-                </div>
-                <div className="flex-1 relative">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="Describe what you need help with..."
-                    className="min-h-[48px] max-h-32 resize-none bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 pr-12"
-                    rows={1}
-                  />
-                </div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+
+              {/* Input bar */}
+              <div className="flex items-end gap-2 bg-muted/40 backdrop-blur-xl rounded-2xl border border-border/40 p-2 focus-within:border-primary/40 transition-colors">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => handleFiles(e.target.files)}
+                  multiple
+                  accept="image/*,video/*,audio/*"
+                  className="hidden"
+                />
+                
+                <div className="flex items-center gap-0.5 shrink-0">
                   <Button 
-                    onClick={handleSendMessage} 
-                    disabled={isLoading || backendStatus !== "online" || (!input.trim() && !mediaPreview)}
-                    size="icon"
-                    className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-500/90 shadow-lg shadow-primary/30"
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
                   >
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    <Paperclip className="h-4 w-4" />
                   </Button>
-                </motion.div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => { fileInputRef.current!.accept = 'image/*'; fileInputRef.current?.click(); }}
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => { fileInputRef.current!.accept = 'video/*'; fileInputRef.current?.click(); }}
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <Video className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  onPaste={handlePaste}
+                  placeholder="Message Fix-ISH..."
+                  rows={1}
+                  className="flex-1 bg-transparent border-0 resize-none text-sm placeholder:text-muted-foreground/50 focus:outline-none min-h-[36px] max-h-32 py-2"
+                  style={{ height: 'auto', overflowY: input.split('\n').length > 3 ? 'auto' : 'hidden' }}
+                />
+
+                <Button 
+                  onClick={handleSend}
+                  disabled={isLoading || !isOnline || (!input.trim() && mediaQueue.length === 0)}
+                  size="icon"
+                  className="h-8 w-8 rounded-xl shrink-0"
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
               </div>
             </div>
           </div>
-        </div>
+        </main>
 
-        {/* RIGHT PANEL - System Intelligence */}
-        <aside className="w-80 border-l border-border/30 bg-background/30 backdrop-blur-xl hidden lg:flex flex-col">
-          <div className="p-4 border-b border-border/30">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-              <CircuitBoard className="h-4 w-4 text-primary" />
-              System Intelligence
-            </h2>
-          </div>
-          
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              
-              {/* Tool Predictions */}
-              <GlowCard active={store.isPredictingTools || (store.toolResult?.tools && store.toolResult.tools.length > 0)}>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+        {/* Right Intelligence Panel */}
+        <AnimatePresence>
+          {showIntelligence && (
+            <motion.aside
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 280, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={spring}
+              className="border-l border-border/40 bg-muted/10 backdrop-blur-xl overflow-hidden shrink-0"
+            >
+              <ScrollArea className="h-full">
+                <div className="p-4 space-y-4">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Intelligence</p>
+
+                  {/* Tool Predictions */}
+                  <div className="rounded-xl bg-background/60 backdrop-blur-sm border border-border/30 p-3 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Tool Predictions</span>
+                      <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">Tool Predictions</span>
                     </div>
-                    {store.isPredictingTools && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                  </div>
-                  {store.toolResult?.tools && store.toolResult.tools.length > 0 ? (
-                    <div className="space-y-3">
-                      {parseTools(store.toolResult.tools).map((tool, i) => (
-                        <motion.div 
-                          key={i} 
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          className="space-y-1"
-                        >
-                          <div className="flex justify-between text-xs">
-                            <span className="text-foreground">{tool.name}</span>
-                            <span className="text-primary font-medium">{Math.round(tool.confidence)}%</span>
-                          </div>
-                          <div className="relative h-1.5 rounded-full bg-background/50 overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${tool.confidence}%` }}
-                              transition={{ duration: 0.5, delay: i * 0.1 }}
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-cyan-500 rounded-full"
-                            />
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      Run "Predict Tools" to analyze
-                    </p>
-                  )}
-                </div>
-              </GlowCard>
-
-              {/* Future Memory */}
-              <GlowCard active={store.isPredictingFuture || !!store.futureResult}>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-cyan-400" />
-                      <span className="text-sm font-medium">Future Memory</span>
-                    </div>
-                    {store.isPredictingFuture && <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />}
-                  </div>
-                  {store.futureResult ? (
-                    <div className="space-y-2">
-                      {store.futureResult.next_steps?.map((step, i) => (
-                        <motion.div 
-                          key={i} 
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                          className="flex items-start gap-2 text-xs"
-                        >
-                          <ChevronRight className="h-3 w-3 text-cyan-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-muted-foreground">{step}</span>
-                        </motion.div>
-                      ))}
-                      {store.futureResult.continuity && (
-                        <p className="text-xs text-cyan-400/70 italic pt-2 border-t border-border/30">
-                          {store.futureResult.continuity}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      Run "Future Memory" for predictions
-                    </p>
-                  )}
-                </div>
-              </GlowCard>
-
-              {/* Active Agents */}
-              {store.processResult?.agent_messages && store.processResult.agent_messages.length > 0 && (
-                <GlowCard active glow>
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-medium">Multi-Agent Output</span>
-                    </div>
-                    <div className="space-y-2">
-                      {store.processResult.agent_messages.map((msg, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: i * 0.15 }}
-                          className="text-xs p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-muted-foreground"
-                        >
-                          {msg}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </GlowCard>
-              )}
-
-              {/* Emotion Detection */}
-              {store.processResult?.emotion && (
-                <GlowCard>
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-pink-400" />
-                      <span className="text-sm font-medium">Emotion Detection</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">
-                        {store.processResult.emotion.label}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {Math.round(store.processResult.emotion.confidence * 100)}% confidence
-                      </span>
-                    </div>
-                  </div>
-                </GlowCard>
-              )}
-
-              {/* Timeline */}
-              {store.processResult?.timeline && (
-                <GlowCard>
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-emerald-400" />
-                      <span className="text-sm font-medium">AGI Timeline</span>
-                    </div>
-                    <div className="space-y-3">
-                      {store.processResult.timeline.past && store.processResult.timeline.past.length > 0 && (
-                        <div>
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Past Actions</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {store.processResult.timeline.past.slice(0, 3).map((item: any, i: number) => (
-                              <Badge key={i} variant="outline" className="text-[10px] border-border/50">
-                                {typeof item === 'string' ? item : JSON.stringify(item).slice(0, 20)}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {store.processResult.timeline.future && store.processResult.timeline.future.length > 0 && (
-                        <div>
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Predicted Future</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {store.processResult.timeline.future.slice(0, 3).map((item: any, i: number) => (
-                              <Badge key={i} className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                {typeof item === 'string' ? item : JSON.stringify(item).slice(0, 20)}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </GlowCard>
-              )}
-
-              {/* System Status */}
-              <GlowCard>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">System Status</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { label: 'Vision', icon: Eye, active: activeSystems.vision },
-                      { label: 'Memory', icon: Cpu, active: activeSystems.memory },
-                      { label: 'Tools', icon: Wrench, active: activeSystems.tools },
-                      { label: 'Safety', icon: Shield, active: activeSystems.safety },
-                    ].map((sys, i) => (
-                      <div 
-                        key={i}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                          sys.active 
-                            ? 'bg-primary/20 border border-primary/30' 
-                            : 'bg-background/30 border border-border/30'
-                        }`}
-                      >
-                        <sys.icon className={`h-3 w-3 ${sys.active ? 'text-primary' : 'text-muted-foreground'}`} />
-                        <span className={`text-xs ${sys.active ? 'text-primary' : 'text-muted-foreground'}`}>{sys.label}</span>
-                        {sys.active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+                    {store.toolResult?.tools && store.toolResult.tools.length > 0 ? (
+                      <div className="space-y-2">
+                        {(Array.isArray(store.toolResult.tools) ? store.toolResult.tools : []).slice(0, 4).map((tool: any, i: number) => {
+                          const name = typeof tool === 'string' ? tool : tool.name || tool.tool;
+                          const conf = typeof tool === 'object' && tool.confidence ? tool.confidence : 70 + Math.random() * 30;
+                          return (
+                            <div key={i} className="space-y-1">
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-muted-foreground">{name}</span>
+                                <span className="text-foreground">{Math.round(conf)}%</span>
+                              </div>
+                              <div className="h-1 rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${conf}%` }}
+                                  className="h-full bg-primary rounded-full"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground/60">No predictions yet</p>
+                    )}
+                  </div>
+
+                  {/* Future Memory */}
+                  <div className="rounded-xl bg-background/60 backdrop-blur-sm border border-border/30 p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">Future Memory</span>
+                    </div>
+                    {store.futureResult?.next_steps && store.futureResult.next_steps.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {store.futureResult.next_steps.slice(0, 4).map((step, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[11px] text-muted-foreground">
+                            <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground/60">No predictions yet</p>
+                    )}
+                  </div>
+
+                  {/* System Status */}
+                  <div className="rounded-xl bg-background/60 backdrop-blur-sm border border-border/30 p-3 space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60">System Status</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Vision', icon: Eye, active: status.vision },
+                        { label: 'Memory', icon: Cpu, active: status.memory },
+                        { label: 'Tools', icon: Wrench, active: status.tools },
+                        { label: 'Safety', icon: Shield, active: status.safety },
+                      ].map((s, i) => (
+                        <div key={i} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] transition-colors ${s.active ? 'bg-primary/10 text-primary' : 'text-muted-foreground/60'}`}>
+                          <s.icon className="h-3 w-3" />
+                          <span>{s.label}</span>
+                          {s.active && <Circle className="h-1.5 w-1.5 fill-current ml-auto" />}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </GlowCard>
-            </div>
-          </ScrollArea>
-        </aside>
-      </main>
+              </ScrollArea>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
