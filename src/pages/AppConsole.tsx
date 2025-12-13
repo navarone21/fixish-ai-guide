@@ -7,7 +7,7 @@ import { useFixishConsoleStore } from "@/state/useFixishConsoleStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Send, 
   Image as ImageIcon, 
@@ -19,8 +19,6 @@ import {
   Loader2,
   X,
   ChevronRight,
-  Bot,
-  User,
   Eye,
   Shield,
   Cpu,
@@ -31,46 +29,73 @@ import {
   Plus,
   Monitor,
   FileUp,
-  Waves
+  Waves,
+  FileText,
+  Sparkles,
+  Activity,
+  Target,
+  Layers,
+  Radio,
+  BarChart3,
+  Gauge,
+  CircleDot,
+  Command,
+  ScanLine
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface Message {
+interface OutputModule {
   id: string;
-  role: "user" | "assistant";
-  content: string;
+  type: 'analysis' | 'steps' | 'tools' | 'warning' | 'vision' | 'audio' | 'memory' | 'diagram';
+  title: string;
+  content: any;
   timestamp: Date;
-  media?: { type: string; url: string; name?: string }[];
-  steps?: string[];
-  tools?: string[];
-  warnings?: string[];
-  reasoning?: string;
-  futureMemory?: string[];
-  emotion?: { label: string; confidence: number };
-  isExpanded?: boolean;
+  status: 'processing' | 'complete' | 'error';
+  media?: { type: string; url: string }[];
 }
 
 const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
+
+// Subsystem definitions
+const subsystems = [
+  { id: 'vision', icon: Eye, label: 'Vision', color: 'hsl(180 100% 60%)' },
+  { id: 'video', icon: Video, label: 'Video', color: 'hsl(200 100% 60%)' },
+  { id: 'audio', icon: Waves, label: 'Audio/Emotion', color: 'hsl(280 100% 60%)' },
+  { id: 'documents', icon: FileText, label: 'Documents', color: 'hsl(40 100% 60%)' },
+  { id: 'enhance', icon: Sparkles, label: 'Enhance', color: 'hsl(320 100% 60%)' },
+  { id: 'memory', icon: Cpu, label: 'Memory', color: 'hsl(140 100% 50%)' },
+  { id: 'tools', icon: Wrench, label: 'Tools', color: 'hsl(30 100% 60%)' },
+  { id: 'safety', icon: Shield, label: 'Safety', color: 'hsl(0 80% 60%)' },
+  { id: 'ar', icon: ScanLine, label: 'Live AR', color: 'hsl(260 100% 65%)' },
+];
 
 export default function AppConsole() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const store = useFixishConsoleStore();
   
-  const [showIntelligence, setShowIntelligence] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeSubsystem, setActiveSubsystem] = useState<string | null>(null);
+  const [hoveredSubsystem, setHoveredSubsystem] = useState<string | null>(null);
+  const [outputModules, setOutputModules] = useState<OutputModule[]>([]);
+  const [command, setCommand] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mediaQueue, setMediaQueue] = useState<{ type: string; url: string; file: File; name: string }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [attachOpen, setAttachOpen] = useState(false);
   
-  const [status, setStatus] = useState({ vision: false, tools: false, memory: false, safety: false });
+  const [systemStatus, setSystemStatus] = useState({
+    vision: { active: false, fps: 0, objects: 0 },
+    audio: { active: false, emotion: '', confidence: 0 },
+    tools: { active: false, predictions: [] as string[] },
+    memory: { active: false, entries: 0 },
+    safety: { active: false, level: 'normal' as 'normal' | 'warning' | 'critical' }
+  });
+  
   const [isOnline, setIsOnline] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const commandInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkHealth();
@@ -80,7 +105,23 @@ export default function AppConsole() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+  }, [outputModules]);
+
+  // Keyboard shortcut for command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        commandInputRef.current?.focus();
+        setCommandPaletteOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setCommandPaletteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const checkHealth = async () => {
     try {
@@ -106,26 +147,12 @@ export default function AppConsole() {
       const fileType = type || file.type.split('/')[0];
       setMediaQueue(prev => [...prev, { type: fileType, url, file, name: file.name }]);
     });
-    setAttachOpen(false);
   };
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     handleFiles(e.dataTransfer.files);
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        const file = items[i].getAsFile();
-        if (file) {
-          const url = URL.createObjectURL(file);
-          setMediaQueue(prev => [...prev, { type: 'image', url, file, name: 'Pasted image' }]);
-        }
-      }
-    }
   };
 
   const removeMedia = (index: number) => {
@@ -139,34 +166,58 @@ export default function AppConsole() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() && mediaQueue.length === 0) return;
-
-    const userMessage: Message = {
+  const addOutputModule = (module: Omit<OutputModule, 'id' | 'timestamp'>) => {
+    const newModule: OutputModule = {
+      ...module,
       id: Date.now().toString(),
-      role: "user",
-      content: input || "",
-      timestamp: new Date(),
-      media: mediaQueue.map(m => ({ type: m.type, url: m.url, name: m.name }))
+      timestamp: new Date()
     };
+    setOutputModules(prev => [...prev, newModule]);
+    return newModule.id;
+  };
 
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
-    const currentMedia = [...mediaQueue];
-    setInput("");
-    setMediaQueue([]);
-    setIsLoading(true);
+  const updateOutputModule = (id: string, updates: Partial<OutputModule>) => {
+    setOutputModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+  };
+
+  const executeCommand = async () => {
+    if (!command.trim() && mediaQueue.length === 0) return;
+
+    setIsProcessing(true);
+    setCommandPaletteOpen(false);
     
-    const hasImage = currentMedia.some(m => m.type === 'image');
-    const hasAudio = currentMedia.some(m => m.type === 'audio');
-    const hasVideo = currentMedia.some(m => m.type === 'video');
-    
-    setStatus({ 
-      vision: hasImage || hasVideo, 
-      tools: true, 
-      memory: true, 
-      safety: true
+    // Add input module
+    if (mediaQueue.length > 0) {
+      addOutputModule({
+        type: 'vision',
+        title: 'Input Media',
+        content: { files: mediaQueue.map(m => m.name) },
+        status: 'complete',
+        media: mediaQueue.map(m => ({ type: m.type, url: m.url }))
+      });
+    }
+
+    // Add processing module
+    const processingId = addOutputModule({
+      type: 'analysis',
+      title: 'Processing Request',
+      content: { command: command || 'Analyzing media...' },
+      status: 'processing'
     });
+
+    // Activate subsystems
+    setSystemStatus(prev => ({
+      ...prev,
+      vision: { ...prev.vision, active: mediaQueue.some(m => m.type === 'image' || m.type === 'video') },
+      audio: { ...prev.audio, active: mediaQueue.some(m => m.type === 'audio') },
+      tools: { ...prev.tools, active: true },
+      memory: { ...prev.memory, active: true }
+    }));
+
+    const currentCommand = command;
+    const currentMedia = [...mediaQueue];
+    setCommand("");
+    setMediaQueue([]);
 
     try {
       let imageBase64: string | undefined;
@@ -179,590 +230,714 @@ export default function AppConsole() {
       }
 
       const result = await FixishAPI.process({
-        prompt: currentInput || "Analyze this content",
+        prompt: currentCommand || "Analyze this content",
         image: imageBase64,
         audio: audioBase64,
-        context: { messages: messages.slice(-5) }
+        context: {}
       });
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: result.instructions || "Analysis complete.",
-        timestamp: new Date(),
-        steps: result.steps,
-        tools: result.predicted_tools,
-        warnings: result.warnings,
-        reasoning: result.agent_messages?.join(" ") || undefined,
-        futureMemory: result.timeline?.future?.map((f: any) => typeof f === 'string' ? f : JSON.stringify(f)),
-        emotion: result.emotion,
-        isExpanded: false
-      };
+      // Update processing module
+      updateOutputModule(processingId, {
+        status: 'complete',
+        content: { command: currentCommand, result: 'Analysis complete' }
+      });
 
-      setMessages(prev => [...prev, assistantMessage]);
-      store.setProcessResult(result);
-      
-      if (result.predicted_tools) {
+      // Add result modules
+      if (result.instructions) {
+        addOutputModule({
+          type: 'analysis',
+          title: 'AGI Analysis',
+          content: { text: result.instructions },
+          status: 'complete'
+        });
+      }
+
+      if (result.steps && result.steps.length > 0) {
+        addOutputModule({
+          type: 'steps',
+          title: 'Execution Steps',
+          content: { steps: result.steps },
+          status: 'complete'
+        });
+      }
+
+      if (result.predicted_tools && result.predicted_tools.length > 0) {
+        addOutputModule({
+          type: 'tools',
+          title: 'Tool Predictions',
+          content: { tools: result.predicted_tools },
+          status: 'complete'
+        });
+        setSystemStatus(prev => ({
+          ...prev,
+          tools: { ...prev.tools, predictions: result.predicted_tools || [] }
+        }));
         store.setToolResult({ tools: result.predicted_tools });
       }
+
+      if (result.warnings && result.warnings.length > 0) {
+        addOutputModule({
+          type: 'warning',
+          title: 'Safety Warnings',
+          content: { warnings: result.warnings },
+          status: 'complete'
+        });
+        setSystemStatus(prev => ({
+          ...prev,
+          safety: { ...prev.safety, active: true, level: 'warning' }
+        }));
+      }
+
+      if (result.emotion) {
+        setSystemStatus(prev => ({
+          ...prev,
+          audio: { active: true, emotion: result.emotion?.label || '', confidence: result.emotion?.confidence || 0 }
+        }));
+      }
+
       if (result.timeline?.future) {
+        addOutputModule({
+          type: 'memory',
+          title: 'Future Memory',
+          content: { predictions: result.timeline.future },
+          status: 'complete'
+        });
         store.setFutureResult({ next_steps: result.timeline.future });
       }
+
+      store.setProcessResult(result);
+
     } catch (error: any) {
-      toast({ title: "Connection Error", description: error.message, variant: "destructive" });
+      updateOutputModule(processingId, {
+        status: 'error',
+        content: { error: error.message }
+      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
-      setIsLoading(false);
-      setTimeout(() => setStatus({ vision: false, tools: false, memory: false, safety: false }), 1500);
+      setIsProcessing(false);
+      setTimeout(() => {
+        setSystemStatus(prev => ({
+          vision: { ...prev.vision, active: false },
+          audio: { ...prev.audio, active: false },
+          tools: { ...prev.tools, active: false },
+          memory: { ...prev.memory, active: false },
+          safety: { ...prev.safety, active: false, level: 'normal' }
+        }));
+      }, 2000);
     }
   };
 
-  const toggleMessageExpanded = (id: string) => {
-    setMessages(prev => prev.map(m => m.id === id ? { ...m, isExpanded: !m.isExpanded } : m));
+  // Output Module Renderer
+  const OutputModuleCard = ({ module }: { module: OutputModule }) => {
+    const getModuleIcon = () => {
+      switch (module.type) {
+        case 'vision': return Eye;
+        case 'steps': return Layers;
+        case 'tools': return Wrench;
+        case 'warning': return AlertTriangle;
+        case 'audio': return Waves;
+        case 'memory': return Cpu;
+        case 'diagram': return BarChart3;
+        default: return Brain;
+      }
+    };
+    const Icon = getModuleIcon();
+    const isWarning = module.type === 'warning';
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={spring}
+        className={`rounded-xl border backdrop-blur-sm overflow-hidden ${
+          isWarning 
+            ? 'bg-amber-500/5 border-amber-500/20' 
+            : 'bg-card/40 border-border/30'
+        }`}
+      >
+        {/* Header */}
+        <div className={`flex items-center justify-between px-4 py-2.5 border-b ${
+          isWarning ? 'border-amber-500/20 bg-amber-500/5' : 'border-border/20 bg-muted/20'
+        }`}>
+          <div className="flex items-center gap-2">
+            <Icon className={`h-3.5 w-3.5 ${isWarning ? 'text-amber-500' : 'text-primary'}`} />
+            <span className="text-xs font-medium">{module.title}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {module.status === 'processing' && (
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            )}
+            {module.status === 'complete' && (
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            )}
+            {module.status === 'error' && (
+              <div className="h-1.5 w-1.5 rounded-full bg-destructive" />
+            )}
+            <span className="text-[9px] text-muted-foreground">
+              {module.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {/* Media */}
+          {module.media && module.media.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {module.media.map((m, i) => (
+                <div key={i} className="rounded-lg overflow-hidden border border-border/20 max-w-[200px]">
+                  {m.type === 'image' && <img src={m.url} alt="" className="max-h-32 object-cover" />}
+                  {m.type === 'video' && <video src={m.url} controls className="max-h-32" />}
+                  {m.type === 'audio' && <audio src={m.url} controls className="w-48" />}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Text content */}
+          {module.content.text && (
+            <p className="text-sm text-foreground leading-relaxed">{module.content.text}</p>
+          )}
+
+          {/* Command */}
+          {module.content.command && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Command className="h-3 w-3" />
+              <span className="font-mono">{module.content.command}</span>
+            </div>
+          )}
+
+          {/* Steps */}
+          {module.content.steps && (
+            <div className="space-y-2">
+              {module.content.steps.map((step: string, i: number) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-start gap-3"
+                >
+                  <div className="h-5 w-5 rounded bg-primary/10 text-primary text-[10px] flex items-center justify-center shrink-0 font-medium">
+                    {i + 1}
+                  </div>
+                  <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Tools */}
+          {module.content.tools && (
+            <div className="flex flex-wrap gap-1.5">
+              {module.content.tools.map((tool: string, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{tool}</Badge>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Warnings */}
+          {module.content.warnings && (
+            <div className="space-y-2">
+              {module.content.warnings.map((w: string, i: number) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-amber-600">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{w}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Future predictions */}
+          {module.content.predictions && (
+            <div className="space-y-1.5">
+              {module.content.predictions.slice(0, 5).map((p: any, i: number) => {
+                const text = typeof p === 'string' ? p : p.label || JSON.stringify(p);
+                return (
+                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <ChevronRight className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                    <span>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Error */}
+          {module.content.error && (
+            <p className="text-sm text-destructive">{module.content.error}</p>
+          )}
+
+          {/* Files */}
+          {module.content.files && (
+            <div className="flex flex-wrap gap-1.5">
+              {module.content.files.map((f: string, i: number) => (
+                <Badge key={i} variant="outline" className="text-[10px]">{f}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
-  // Minimal status indicator
-  const StatusDot = ({ active, icon: Icon }: { active: boolean; icon: any }) => (
-    <motion.div 
-      className={`flex items-center justify-center w-6 h-6 rounded-full transition-all ${
-        active ? 'bg-primary/20' : 'bg-transparent'
-      }`}
-      animate={active ? { scale: [1, 1.1, 1] } : {}}
-      transition={{ duration: 0.5, repeat: active ? Infinity : 0 }}
-    >
-      <Icon className={`h-3 w-3 ${active ? 'text-primary' : 'text-muted-foreground/30'}`} />
-    </motion.div>
-  );
-
   return (
-    <div 
-      className="h-screen flex flex-col overflow-hidden bg-background"
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={handleDrop}
-    >
-      {/* Subtle background grid */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div 
-          className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: `radial-gradient(circle, hsl(var(--primary) / 0.03) 0%, transparent 70%)` }}
-          animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.7, 0.5] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
-      {/* Minimal Header */}
-      <header className="h-14 flex items-center justify-between px-6 border-b border-border/20 bg-background/80 backdrop-blur-xl shrink-0 relative z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-8 w-8 rounded-xl">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2.5">
+    <TooltipProvider>
+      <div 
+        className="h-screen flex flex-col overflow-hidden bg-[hsl(220,20%,8%)] text-foreground"
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
+        {/* Deep space grid background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `
+                linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
+                linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)
+              `,
+              backgroundSize: '40px 40px'
+            }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full"
+            style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.05) 0%, transparent 60%)' }}
+            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Floating particles */}
+          {[...Array(6)].map((_, i) => (
             <motion.div
-              className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center"
-              animate={isLoading ? { boxShadow: ['0 0 0 0 hsl(var(--primary) / 0.4)', '0 0 0 6px hsl(var(--primary) / 0)', '0 0 0 0 hsl(var(--primary) / 0.4)'] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Brain className="h-3.5 w-3.5 text-primary" />
-            </motion.div>
-            <span className="text-sm font-medium">Fix-ISH</span>
-          </div>
-        </div>
-        
-        {/* Status indicators - only location */}
-        <div className="flex items-center gap-0.5 bg-muted/30 rounded-full px-1 py-1">
-          <StatusDot active={status.vision} icon={Eye} />
-          <StatusDot active={status.tools} icon={Wrench} />
-          <StatusDot active={status.memory} icon={Cpu} />
-          <StatusDot active={status.safety} icon={Shield} />
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-primary/30"
+              style={{ left: `${20 + i * 15}%`, top: `${30 + (i % 3) * 20}%` }}
+              animate={{ 
+                y: [0, -30, 0],
+                opacity: [0.2, 0.5, 0.2]
+              }}
+              transition={{ duration: 4 + i, repeat: Infinity, delay: i * 0.5 }}
+            />
+          ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* AGI Status chip */}
-          <motion.div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${
-              isLoading 
-                ? 'bg-primary/10 text-primary' 
-                : isOnline 
-                  ? 'bg-muted/40 text-muted-foreground' 
-                  : 'bg-destructive/10 text-destructive'
-            }`}
-            animate={isLoading ? { opacity: [1, 0.7, 1] } : {}}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${isLoading ? 'bg-primary' : isOnline ? 'bg-emerald-500' : 'bg-destructive'}`} />
-            {isLoading ? 'Processing' : isOnline ? 'Ready' : 'Offline'}
-          </motion.div>
+        {/* Header */}
+        <header className="h-12 flex items-center justify-between px-4 border-b border-border/10 bg-background/20 backdrop-blur-xl shrink-0 relative z-10">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="h-7 w-7 rounded-lg">
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <motion.div
+                className="h-6 w-6 rounded-md bg-primary/20 flex items-center justify-center"
+                animate={isProcessing ? { 
+                  boxShadow: ['0 0 0 0 hsl(var(--primary) / 0.5)', '0 0 0 8px hsl(var(--primary) / 0)', '0 0 0 0 hsl(var(--primary) / 0.5)']
+                } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <Brain className="h-3 w-3 text-primary" />
+              </motion.div>
+              <span className="text-xs font-semibold">FIX-ISH AGI</span>
+            </div>
+          </div>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setShowIntelligence(!showIntelligence)}
-            className="h-8 w-8 rounded-xl"
-          >
-            <Zap className={`h-4 w-4 ${showIntelligence ? 'text-primary' : 'text-muted-foreground'}`} />
-          </Button>
-        </div>
-      </header>
-
-      {/* Drop overlay */}
-      <AnimatePresence>
-        {isDragging && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-4 z-50 bg-primary/5 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-primary/30 rounded-2xl"
-          >
-            <div className="text-center">
-              <FileUp className="h-10 w-10 text-primary mx-auto mb-3" />
-              <p className="text-sm font-medium text-primary">Drop files here</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0">
-          <ScrollArea className="flex-1 px-6 py-8" ref={scrollRef}>
-            <div className="max-w-2xl mx-auto space-y-6">
-              {/* Clean Idle State */}
-              {messages.length === 0 && !isLoading && (
-                <motion.div 
-                  className="text-center py-32"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <motion.div
-                    className="relative inline-flex items-center justify-center mb-8"
-                    animate={{ scale: [1, 1.02, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <motion.div
-                      className="absolute w-20 h-20 rounded-full border border-primary/10"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                    />
-                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                      <Brain className="h-7 w-7 text-primary/60" />
-                    </div>
-                  </motion.div>
-                  
-                  <p className="text-sm text-muted-foreground/50">Ready for Multimodal Analysis</p>
-                </motion.div>
-              )}
-
-              <AnimatePresence mode="popLayout">
-                {messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={spring}
-                    layout
-                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Bot className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                    )}
-                    
-                    <div className={`max-w-[80%] space-y-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      {/* Media */}
-                      {msg.media && msg.media.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {msg.media.map((m, i) => (
-                            <div key={i} className="rounded-xl overflow-hidden border border-border/20">
-                              {m.type === 'image' && <img src={m.url} alt="" className="max-h-40 object-cover" />}
-                              {m.type === 'video' && <video src={m.url} controls className="max-h-40" />}
-                              {m.type === 'audio' && <audio src={m.url} controls className="w-48" />}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Message bubble */}
-                      {msg.content && (
-                        <div className={`rounded-2xl px-4 py-2.5 ${
-                          msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground rounded-br-lg' 
-                            : 'bg-muted/50 rounded-bl-lg'
-                        }`}>
-                          <p className="text-sm leading-relaxed">{msg.content}</p>
-                        </div>
-                      )}
-
-                      {/* Expandable details */}
-                      {msg.role === 'assistant' && (msg.steps || msg.tools || msg.reasoning || msg.warnings || msg.futureMemory || msg.emotion) && (
-                        <div className="space-y-2 w-full">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => toggleMessageExpanded(msg.id)}
-                            className="h-7 text-[10px] text-muted-foreground gap-1 px-2 rounded-lg"
-                          >
-                            <motion.div animate={{ rotate: msg.isExpanded ? 90 : 0 }}>
-                              <ChevronRight className="h-3 w-3" />
-                            </motion.div>
-                            Details
-                          </Button>
-
-                          <AnimatePresence>
-                            {msg.isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden space-y-2"
-                              >
-                                {msg.reasoning && (
-                                  <div className="bg-muted/30 rounded-xl p-3">
-                                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 mb-1">Reasoning</p>
-                                    <p className="text-xs text-muted-foreground">{msg.reasoning}</p>
-                                  </div>
-                                )}
-
-                                {msg.steps && msg.steps.length > 0 && (
-                                  <div className="bg-muted/30 rounded-xl p-3 space-y-1.5">
-                                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50">Steps</p>
-                                    {msg.steps.map((step, i) => (
-                                      <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                        <span className="text-primary text-[10px]">{i + 1}.</span>
-                                        <span>{step}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {msg.tools && msg.tools.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {msg.tools.map((tool, i) => (
-                                      <Badge key={i} variant="secondary" className="text-[9px] bg-primary/5 text-primary border-0">{tool}</Badge>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {msg.warnings && msg.warnings.length > 0 && (
-                                  <div className="space-y-1">
-                                    {msg.warnings.map((w, i) => (
-                                      <div key={i} className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/5 rounded-lg px-3 py-2">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>{w}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {msg.emotion && (
-                                  <div className="flex items-center gap-2">
-                                    <Waves className="h-3 w-3 text-primary" />
-                                    <Badge variant="outline" className="text-[9px]">{msg.emotion.label}</Badge>
-                                    <span className="text-[9px] text-muted-foreground">{Math.round(msg.emotion.confidence * 100)}%</span>
-                                  </div>
-                                )}
-
-                                {msg.futureMemory && msg.futureMemory.length > 0 && (
-                                  <div className="bg-muted/30 rounded-xl p-3 space-y-1">
-                                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50">Future</p>
-                                    {msg.futureMemory.slice(0, 3).map((f, i) => (
-                                      <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                        <ChevronRight className="h-3 w-3 text-primary shrink-0 mt-0.5" />
-                                        <span>{f}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
-                    </div>
-
-                    {msg.role === 'user' && (
-                      <div className="h-7 w-7 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* Loading */}
-              {isLoading && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-2 bg-muted/50 rounded-2xl rounded-bl-lg px-4 py-2.5">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Analyzing...</span>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </ScrollArea>
-
-          {/* Clean Input Bar */}
-          <div className="p-6 pt-0">
-            <div className="max-w-2xl mx-auto">
-              {/* Media queue */}
-              <AnimatePresence>
-                {mediaQueue.length > 0 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="flex flex-wrap gap-2 mb-3"
-                  >
-                    {mediaQueue.map((media, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0.8 }}
-                        className="relative group"
-                      >
-                        <div className="h-16 w-16 rounded-lg overflow-hidden border border-border/20 bg-muted/30">
-                          {media.type === 'image' && <img src={media.url} alt="" className="h-full w-full object-cover" />}
-                          {media.type === 'video' && (
-                            <div className="h-full w-full flex items-center justify-center bg-muted/50">
-                              <Video className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          {media.type === 'audio' && (
-                            <div className="h-full w-full flex items-center justify-center bg-muted/50">
-                              <Mic className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => removeMedia(i)}
-                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Input */}
-              <div className="flex items-end gap-2 bg-muted/30 rounded-2xl border border-border/20 p-2 focus-within:border-primary/30 transition-colors">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={(e) => handleFiles(e.target.files)}
-                  multiple
-                  className="hidden"
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Activity className="h-3 w-3" />
+              <span>System Load</span>
+              <div className="w-16 h-1 bg-muted/30 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-primary rounded-full"
+                  animate={{ width: isProcessing ? '80%' : '15%' }}
+                  transition={{ duration: 0.3 }}
                 />
-                
-                {/* Single + button with popover */}
-                <Popover open={attachOpen} onOpenChange={setAttachOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg shrink-0">
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" align="start" className="w-48 p-2">
-                    <div className="space-y-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs"
-                        onClick={() => openFileDialog('*/*')}
-                      >
-                        <FileUp className="h-3.5 w-3.5" />
-                        Upload file
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs"
-                        onClick={() => openFileDialog('image/*')}
-                      >
-                        <ImageIcon className="h-3.5 w-3.5" />
-                        Upload photo
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs"
-                        onClick={() => openFileDialog('video/*')}
-                      >
-                        <Video className="h-3.5 w-3.5" />
-                        Upload video
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs"
-                        onClick={() => openFileDialog('audio/*')}
-                      >
-                        <Mic className="h-3.5 w-3.5" />
-                        Record audio
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs text-muted-foreground/50"
-                        disabled
-                      >
-                        <Camera className="h-3.5 w-3.5" />
-                        Camera
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start gap-2 h-9 text-xs text-muted-foreground/50"
-                        disabled
-                      >
-                        <Monitor className="h-3.5 w-3.5" />
-                        Screen capture
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  onPaste={handlePaste}
-                  placeholder="Message Fix-ISH..."
-                  rows={1}
-                  className="flex-1 bg-transparent border-0 resize-none text-sm placeholder:text-muted-foreground/40 focus:outline-none min-h-[36px] max-h-28 py-2"
-                />
-
-                <Button 
-                  onClick={handleSend}
-                  disabled={isLoading || !isOnline || (!input.trim() && mediaQueue.length === 0)}
-                  size="icon"
-                  className="h-8 w-8 rounded-lg shrink-0"
-                >
-                  {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                </Button>
-              </div>
-              
-              {/* Live AR chip */}
-              <div className="flex justify-center mt-3">
-                <motion.div 
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/20 text-[10px] text-muted-foreground/50"
-                  animate={{ opacity: [0.5, 0.7, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <Camera className="h-2.5 w-2.5" />
-                  Live AR: Initializing
-                </motion.div>
               </div>
             </div>
-          </div>
-        </main>
-
-        {/* Right Panel - Only Tool Predictions & Future Memory */}
-        <AnimatePresence>
-          {showIntelligence && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={spring}
-              className="border-l border-border/20 bg-muted/5 overflow-hidden shrink-0"
+            
+            <motion.div
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-medium ${
+                isProcessing ? 'bg-primary/20 text-primary' : isOnline ? 'bg-emerald-500/10 text-emerald-400' : 'bg-destructive/20 text-destructive'
+              }`}
+              animate={isProcessing ? { opacity: [1, 0.6, 1] } : {}}
+              transition={{ duration: 1, repeat: Infinity }}
             >
-              <ScrollArea className="h-full">
-                <div className="p-6 space-y-6">
-                  {/* Tool Predictions */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Wrench className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-medium">Tool Predictions</span>
-                    </div>
-                    {store.toolResult?.tools && store.toolResult.tools.length > 0 ? (
-                      <div className="space-y-3">
-                        {(Array.isArray(store.toolResult.tools) ? store.toolResult.tools : []).slice(0, 5).map((tool: any, i: number) => {
-                          const name = typeof tool === 'string' ? tool : tool.name || tool.tool;
-                          const conf = typeof tool === 'object' && tool.confidence ? tool.confidence : 70 + Math.random() * 30;
-                          return (
-                            <motion.div 
-                              key={i} 
-                              className="space-y-1"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: i * 0.1 }}
-                            >
-                              <div className="flex justify-between text-[11px]">
-                                <span className="text-muted-foreground">{name}</span>
-                                <span className="text-foreground">{Math.round(conf)}%</span>
-                              </div>
-                              <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${conf}%` }}
-                                  transition={{ duration: 0.6, delay: i * 0.1 }}
-                                  className="h-full bg-primary/60 rounded-full"
-                                />
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground/40">No predictions yet</p>
-                    )}
-                  </div>
+              <span className={`h-1.5 w-1.5 rounded-full ${isProcessing ? 'bg-primary' : isOnline ? 'bg-emerald-400' : 'bg-destructive'}`} />
+              {isProcessing ? 'PROCESSING' : isOnline ? 'ONLINE' : 'OFFLINE'}
+            </motion.div>
+          </div>
+        </header>
 
-                  <div className="h-px bg-border/10" />
-
-                  {/* Future Memory */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-medium">Future Memory</span>
-                    </div>
-                    {store.futureResult?.next_steps && store.futureResult.next_steps.length > 0 ? (
-                      <div className="space-y-2">
-                        {store.futureResult.next_steps.slice(0, 5).map((step: any, i: number) => {
-                          const stepText = typeof step === 'string' ? step : step.label || JSON.stringify(step);
-                          return (
-                            <motion.div 
-                              key={i} 
-                              className="flex items-start gap-2 text-[11px] text-muted-foreground"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: i * 0.1 }}
-                            >
-                              <div className="h-1.5 w-1.5 rounded-full bg-primary/40 mt-1.5 shrink-0" />
-                              <span className="leading-relaxed">{stepText}</span>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground/40">No predictions yet</p>
-                    )}
-                  </div>
-                </div>
-              </ScrollArea>
-            </motion.aside>
+        {/* Drop overlay */}
+        <AnimatePresence>
+          {isDragging && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-4 z-50 bg-primary/10 backdrop-blur-sm flex items-center justify-center border border-primary/30 rounded-xl"
+            >
+              <div className="text-center">
+                <FileUp className="h-8 w-8 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium text-primary">Drop files</p>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="flex-1 flex overflow-hidden relative z-10">
+          {/* LEFT PANEL - Subsystem Toolbar */}
+          <aside className="w-14 border-r border-border/10 bg-background/10 backdrop-blur-xl flex flex-col items-center py-3 gap-1 shrink-0">
+            {subsystems.map((sub) => {
+              const isActive = systemStatus[sub.id as keyof typeof systemStatus]?.active;
+              const isHovered = hoveredSubsystem === sub.id;
+              const Icon = sub.icon;
+              
+              return (
+                <Tooltip key={sub.id}>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      onMouseEnter={() => setHoveredSubsystem(sub.id)}
+                      onMouseLeave={() => setHoveredSubsystem(null)}
+                      onClick={() => setActiveSubsystem(activeSubsystem === sub.id ? null : sub.id)}
+                      className={`relative w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                        activeSubsystem === sub.id 
+                          ? 'bg-primary/20' 
+                          : isHovered 
+                            ? 'bg-muted/30' 
+                            : 'bg-transparent'
+                      }`}
+                      animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                      transition={{ duration: 0.5, repeat: isActive ? Infinity : 0 }}
+                    >
+                      <Icon 
+                        className="h-4 w-4" 
+                        style={{ color: isActive || activeSubsystem === sub.id ? sub.color : 'hsl(var(--muted-foreground) / 0.5)' }}
+                      />
+                      {isActive && (
+                        <motion.div
+                          className="absolute inset-0 rounded-lg border"
+                          style={{ borderColor: sub.color }}
+                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                        />
+                      )}
+                    </motion.button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">
+                    {sub.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+            
+            <div className="flex-1" />
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg" onClick={() => openFileDialog('*/*')}>
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">Add Input</TooltipContent>
+            </Tooltip>
+          </aside>
+
+          {/* CENTER PANEL - AGI Live Feed */}
+          <main className="flex-1 flex flex-col min-w-0">
+            <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+              <div className="max-w-4xl mx-auto space-y-4">
+                {/* Empty state */}
+                {outputModules.length === 0 && !isProcessing && (
+                  <motion.div 
+                    className="text-center py-24"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <motion.div
+                      className="relative inline-flex items-center justify-center mb-6"
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <motion.div
+                        className="absolute w-24 h-24 rounded-full border border-primary/10"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0, 0.2] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                      />
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center border border-primary/10">
+                        <Brain className="h-8 w-8 text-primary/40" />
+                      </div>
+                    </motion.div>
+                    
+                    <p className="text-sm text-muted-foreground/40 mb-2">AGI Console Ready</p>
+                    <p className="text-xs text-muted-foreground/30">
+                      Press <kbd className="px-1.5 py-0.5 bg-muted/20 rounded text-[10px]">⌘K</kbd> or use command bar
+                    </p>
+                  </motion.div>
+                )}
+
+                {/* Output Modules */}
+                <AnimatePresence mode="popLayout">
+                  {outputModules.map((module) => (
+                    <OutputModuleCard key={module.id} module={module} />
+                  ))}
+                </AnimatePresence>
+
+                {/* Processing indicator */}
+                {isProcessing && outputModules.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center justify-center gap-2 py-4"
+                  >
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-primary"
+                          animate={{ y: [0, -6, 0] }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">Processing...</span>
+                  </motion.div>
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* BOTTOM BAR - Command Input */}
+            <div className="p-4 border-t border-border/10 bg-background/20 backdrop-blur-xl">
+              <div className="max-w-4xl mx-auto">
+                {/* Media queue */}
+                <AnimatePresence>
+                  {mediaQueue.length > 0 && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="flex flex-wrap gap-2 mb-3"
+                    >
+                      {mediaQueue.map((media, i) => (
+                        <motion.div key={i} initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="relative group">
+                          <div className="h-14 w-14 rounded-lg overflow-hidden border border-border/20 bg-muted/20">
+                            {media.type === 'image' && <img src={media.url} alt="" className="h-full w-full object-cover" />}
+                            {media.type === 'video' && <div className="h-full w-full flex items-center justify-center"><Video className="h-4 w-4 text-muted-foreground" /></div>}
+                            {media.type === 'audio' && <div className="h-full w-full flex items-center justify-center"><Mic className="h-4 w-4 text-muted-foreground" /></div>}
+                          </div>
+                          <button
+                            onClick={() => removeMedia(i)}
+                            className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted flex items-center justify-center opacity-0 group-hover:opacity-100"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Command bar */}
+                <div className="flex items-center gap-2">
+                  <input type="file" ref={fileInputRef} onChange={(e) => handleFiles(e.target.files)} multiple className="hidden" />
+                  
+                  {/* Quick actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {[
+                      { icon: ImageIcon, accept: 'image/*', label: 'Image' },
+                      { icon: Video, accept: 'video/*', label: 'Video' },
+                      { icon: Mic, accept: 'audio/*', label: 'Audio' },
+                      { icon: Camera, accept: '', label: 'Camera' },
+                      { icon: Monitor, accept: '', label: 'Screen' },
+                    ].map((btn, i) => (
+                      <Tooltip key={i}>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-lg"
+                            onClick={() => btn.accept && openFileDialog(btn.accept)}
+                            disabled={!btn.accept}
+                          >
+                            <btn.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs">{btn.label}</TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+
+                  <div className="h-6 w-px bg-border/20" />
+
+                  {/* Command input */}
+                  <div className="flex-1 flex items-center gap-2 bg-muted/10 rounded-lg border border-border/20 px-3 py-2 focus-within:border-primary/30">
+                    <Command className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <input
+                      ref={commandInputRef}
+                      value={command}
+                      onChange={(e) => setCommand(e.target.value)}
+                      onFocus={() => setCommandPaletteOpen(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          executeCommand();
+                        }
+                      }}
+                      placeholder="Enter command or describe task..."
+                      className="flex-1 bg-transparent border-0 text-sm placeholder:text-muted-foreground/30 focus:outline-none"
+                    />
+                    <kbd className="text-[9px] text-muted-foreground/40 bg-muted/20 px-1.5 py-0.5 rounded">⌘K</kbd>
+                  </div>
+
+                  <Button 
+                    onClick={executeCommand}
+                    disabled={isProcessing || !isOnline || (!command.trim() && mediaQueue.length === 0)}
+                    size="sm"
+                    className="h-9 px-4 rounded-lg"
+                  >
+                    {isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                    <span className="ml-1.5 text-xs">Execute</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          {/* RIGHT PANEL - System Intelligence */}
+          <aside className="w-64 border-l border-border/10 bg-background/10 backdrop-blur-xl overflow-hidden shrink-0">
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40">System Intelligence</p>
+
+                {/* Tool Predictions */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-medium">Tool Predictions</span>
+                  </div>
+                  {store.toolResult?.tools && store.toolResult.tools.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {(Array.isArray(store.toolResult.tools) ? store.toolResult.tools : []).slice(0, 4).map((tool: any, i: number) => {
+                        const name = typeof tool === 'string' ? tool : tool.name || tool.tool;
+                        const conf = typeof tool === 'object' && tool.confidence ? tool.confidence : 70 + Math.random() * 30;
+                        return (
+                          <div key={i} className="space-y-0.5">
+                            <div className="flex justify-between text-[9px]">
+                              <span className="text-muted-foreground">{name}</span>
+                              <span>{Math.round(conf)}%</span>
+                            </div>
+                            <div className="h-0.5 rounded-full bg-muted/30 overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${conf}%` }}
+                                className="h-full bg-primary/60 rounded-full"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-muted-foreground/30">Waiting for input...</p>
+                  )}
+                </div>
+
+                <div className="h-px bg-border/10" />
+
+                {/* Future Memory */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-medium">Future Memory</span>
+                  </div>
+                  {store.futureResult?.next_steps && store.futureResult.next_steps.length > 0 ? (
+                    <div className="space-y-1">
+                      {store.futureResult.next_steps.slice(0, 4).map((step: any, i: number) => {
+                        const text = typeof step === 'string' ? step : step.label || JSON.stringify(step);
+                        return (
+                          <div key={i} className="flex items-start gap-1.5 text-[9px] text-muted-foreground">
+                            <div className="h-1 w-1 rounded-full bg-primary/40 mt-1.5 shrink-0" />
+                            <span className="line-clamp-2">{text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-muted-foreground/30">No predictions</p>
+                  )}
+                </div>
+
+                <div className="h-px bg-border/10" />
+
+                {/* Safety Status */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className={`h-3 w-3 ${
+                      systemStatus.safety.level === 'critical' ? 'text-destructive' :
+                      systemStatus.safety.level === 'warning' ? 'text-amber-500' : 'text-emerald-500'
+                    }`} />
+                    <span className="text-[10px] font-medium">Safety</span>
+                  </div>
+                  <div className={`text-[9px] px-2 py-1 rounded ${
+                    systemStatus.safety.level === 'critical' ? 'bg-destructive/10 text-destructive' :
+                    systemStatus.safety.level === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-400'
+                  }`}>
+                    {systemStatus.safety.level === 'critical' ? 'CRITICAL' :
+                     systemStatus.safety.level === 'warning' ? 'WARNING' : 'NORMAL'}
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/10" />
+
+                {/* Vision Stats */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-medium">Vision</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/10 rounded px-2 py-1.5">
+                      <p className="text-[8px] text-muted-foreground/50 uppercase">Status</p>
+                      <p className="text-[10px] font-medium">{systemStatus.vision.active ? 'Active' : 'Idle'}</p>
+                    </div>
+                    <div className="bg-muted/10 rounded px-2 py-1.5">
+                      <p className="text-[8px] text-muted-foreground/50 uppercase">Objects</p>
+                      <p className="text-[10px] font-medium">{systemStatus.vision.objects}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/10" />
+
+                {/* Audio/Emotion */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Waves className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-medium">Emotion/Tone</span>
+                  </div>
+                  {systemStatus.audio.emotion ? (
+                    <div className="bg-muted/10 rounded px-2 py-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px]">{systemStatus.audio.emotion}</span>
+                        <span className="text-[9px] text-muted-foreground">{Math.round(systemStatus.audio.confidence * 100)}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-muted-foreground/30">No audio analyzed</p>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+          </aside>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
