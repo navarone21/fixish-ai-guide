@@ -108,6 +108,22 @@ export async function uploadAudio(file: File): Promise<AudioAnalysisResponse> {
 }
 
 /* ----------------------- */
+/*  UPLOAD VIDEO           */
+/* ----------------------- */
+export interface VideoAnalysisResponse {
+  analysis?: string;
+  frame_analysis?: string;
+  detections?: any[];
+  error?: string;
+}
+
+export async function uploadVideo(file: File): Promise<VideoAnalysisResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return await postFormData("/upload_video", formData);
+}
+
+/* ----------------------- */
 /*  UPLOAD VIDEO FRAME     */
 /* ----------------------- */
 export interface VideoFrameResponse {
@@ -217,6 +233,7 @@ export const FixishAPI = {
   // New endpoints (localhost:5050)
   process,
   uploadImage,
+  uploadVideo,
   uploadAudio,
   uploadVideoFrame,
   predictTools,
