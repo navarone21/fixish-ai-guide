@@ -174,9 +174,15 @@ const Task = () => {
             </Button>
             <h1 className="text-xl font-semibold text-foreground">Fix-ISH AGI Console</h1>
           </div>
-          <Badge variant="outline" className="text-primary border-primary">
-            Connected to localhost:5050
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => navigate("/super-agent")}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat Mode
+            </Button>
+            <Badge variant="outline" className="text-primary border-primary">
+              localhost:5050
+            </Badge>
+          </div>
         </div>
       </header>
 
