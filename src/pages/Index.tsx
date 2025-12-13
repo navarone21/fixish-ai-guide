@@ -119,7 +119,7 @@ const Index = () => {
               Feedback
             </Button>
             <Button 
-              onClick={() => navigate("/task")}
+              onClick={() => navigate("/app")}
               className="shadow-md"
             >
               Launch App
@@ -214,7 +214,7 @@ const Index = () => {
             >
               <Button 
                 size="lg"
-                onClick={() => navigate("/task")}
+                onClick={() => navigate("/app")}
                 className="shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:shadow-2xl relative overflow-hidden group"
               >
                 <motion.span
@@ -379,7 +379,7 @@ const Index = () => {
                 </li>
               </ul>
               <Button 
-                onClick={() => navigate("/task")}
+                onClick={() => navigate("/app")}
                 className="w-full" 
                 variant="outline"
               >
@@ -428,7 +428,7 @@ const Index = () => {
                 </li>
               </ul>
               <Button 
-                onClick={() => navigate("/task")}
+                onClick={() => navigate("/app")}
                 className="w-full"
               >
                 Get Started

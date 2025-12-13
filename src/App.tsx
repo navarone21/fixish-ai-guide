@@ -6,7 +6,7 @@ import { MainThemeProvider } from "@/contexts/MainThemeContext";
 import { FixishProvider } from "@/contexts/FixishProvider";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
-import SuperAgent from "./pages/SuperAgent";
+import AppConsole from "./pages/AppConsole";
 import LiveRepair from "./pages/LiveRepair";
 import Steps from "./pages/Steps";
 import MeshViewer from "./pages/MeshViewer";
@@ -26,7 +26,6 @@ import DepthVision from "./pages/DepthVision";
 import ToolsPanel from "./pages/ToolsPanel";
 import ExplorePage from "./pages/ExplorePage";
 import FeatureToggles from "./pages/FeatureToggles";
-import Task from "./pages/Task";
 
 const queryClient = new QueryClient();
 
@@ -39,8 +38,8 @@ const App = () => (
         <FixishProvider backendUrl="https://operations-english-relates-invited.trycloudflare.com">
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/app" element={<AppConsole />} />
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/super-agent" element={<SuperAgent />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/live" element={<LiveRepair />} />
             <Route path="/live-repair" element={<LiveRepair />} />
@@ -60,7 +59,6 @@ const App = () => (
             <Route path="/support" element={<SupportPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/task" element={<Task />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </FixishProvider>
