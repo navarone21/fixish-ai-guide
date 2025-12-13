@@ -549,13 +549,12 @@ export default function AppConsole() {
                   alt="Fix-ISH" 
                   className="h-4 w-4 object-contain"
                   animate={{ 
-                    rotateY: [0, 15, 0, -15, 0],
-                    scale: [1, 1.05, 1, 1.05, 1]
+                    scaleX: [1, 0.7, 1, 0.7, 1],
+                    y: [0, -1, 0, -1, 0]
                   }}
                   transition={{ 
-                    duration: 0.3, 
+                    duration: 0.15, 
                     repeat: Infinity, 
-                    repeatDelay: 0.5,
                     ease: "easeInOut"
                   }}
                 />
