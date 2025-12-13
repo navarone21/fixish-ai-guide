@@ -26,6 +26,7 @@ import DepthVision from "./pages/DepthVision";
 import ToolsPanel from "./pages/ToolsPanel";
 import ExplorePage from "./pages/ExplorePage";
 import FeatureToggles from "./pages/FeatureToggles";
+import Task from "./pages/Task";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/support" element={<SupportPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/task" element={<Task />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </FixishProvider>
