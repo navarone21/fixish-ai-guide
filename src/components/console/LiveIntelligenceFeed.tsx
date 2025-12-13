@@ -11,7 +11,7 @@ import { useState } from "react";
 
 interface OutputModule {
   id: string;
-  type: 'analysis' | 'steps' | 'tools' | 'warning' | 'vision' | 'audio' | 'memory' | 'diagram';
+  type: string;
   title: string;
   content: any;
   timestamp: Date;

@@ -15,7 +15,7 @@ interface SubsystemStatus {
 }
 
 interface SubsystemDockProps {
-  systemStatus: Record<string, SubsystemStatus>;
+  systemStatus: Record<string, any>;
   onUpload: (type: string, accept: string) => void;
   onAction: (subsystem: string, action: string) => void;
 }
@@ -104,6 +104,19 @@ const subsystems = [
 
 export function SubsystemDock({ systemStatus, onUpload, onAction }: SubsystemDockProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = (id: string) => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    const timeout = setTimeout(() => setExpandedId(id), 120);
+    setHoverTimeout(timeout);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    const timeout = setTimeout(() => setExpandedId(null), 250);
+    setHoverTimeout(timeout);
+  };
 
   const getStatusColor = (status: SubsystemStatus['status']) => {
     switch (status) {
@@ -133,7 +146,12 @@ export function SubsystemDock({ systemStatus, onUpload, onAction }: SubsystemDoc
         const Icon = sub.icon;
 
         return (
-          <div key={sub.id} className="relative">
+          <div 
+            key={sub.id} 
+            className="relative"
+            onMouseEnter={() => handleMouseEnter(sub.id)}
+            onMouseLeave={handleMouseLeave}
+          >
             <motion.button
               onClick={() => setExpandedId(isExpanded ? null : sub.id)}
               className={`relative w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
