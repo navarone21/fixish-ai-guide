@@ -544,7 +544,21 @@ export default function AppConsole() {
                 } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
-                <img src={hummingbirdLogo} alt="Fix-ISH" className="h-4 w-4 object-contain" />
+                <motion.img 
+                  src={hummingbirdLogo} 
+                  alt="Fix-ISH" 
+                  className="h-4 w-4 object-contain"
+                  animate={{ 
+                    rotateY: [0, 15, 0, -15, 0],
+                    scale: [1, 1.05, 1, 1.05, 1]
+                  }}
+                  transition={{ 
+                    duration: 0.3, 
+                    repeat: Infinity, 
+                    repeatDelay: 0.5,
+                    ease: "easeInOut"
+                  }}
+                />
               </motion.div>
               <span className="text-xs font-semibold">FIX-ISH AGI</span>
             </div>
