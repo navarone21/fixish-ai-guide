@@ -14,8 +14,10 @@ import { CommandBar } from "@/components/console/CommandBar";
 import { IntelligencePanel } from "@/components/console/IntelligencePanel";
 import { DropZone } from "@/components/console/DropZone";
 import { UploadZone } from "@/components/console/UploadZone";
+import { KeyboardShortcuts } from "@/components/console/KeyboardShortcuts";
 import {
   VisionAnalysisModule,
+  VideoFrameModule,
   ToolPredictionModule,
   RepairSequenceModule,
   ReasoningModule,
@@ -27,7 +29,7 @@ import {
 
 interface DynamicModule {
   id: string;
-  type: 'vision' | 'tools' | 'steps' | 'reasoning' | 'timeline' | 'safety' | 'emotion' | 'memory';
+  type: 'vision' | 'video' | 'tools' | 'steps' | 'reasoning' | 'timeline' | 'safety' | 'emotion' | 'memory';
   data: any;
 }
 
@@ -55,6 +57,7 @@ export default function AppConsole() {
   const [isDragging, setIsDragging] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [lastImageUrl, setLastImageUrl] = useState<string | null>(null);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   
   const [systemStatus, setSystemStatus] = useState<SystemStatusState>({
     vision: { active: false, status: 'idle', fps: 0, objects: 0 },
@@ -87,6 +90,24 @@ export default function AppConsole() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [modules]);
+
+  // Keyboard shortcuts listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘+Shift+K for shortcuts panel
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+      // ⌘+U for upload
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+        e.preventDefault();
+        fileInputRef.current?.click();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const fileToBase64 = (file: File): Promise<string> => 
     new Promise((resolve, reject) => {
@@ -187,6 +208,21 @@ export default function AppConsole() {
         ];
         addModule('vision', { imageUrl, objects });
         setSystemStatus(prev => ({ ...prev, vision: { ...prev.vision, objects: objects.length } }));
+      }
+
+      // Video Frame Analysis Module
+      const hasVideo = currentMedia.some(m => m.type === 'video');
+      if (hasVideo) {
+        const videoUrl = currentMedia.find(m => m.type === 'video')?.url;
+        const frames = (result as any).video_frames || [
+          { timestamp: 0.5, objects: [{ name: 'Engine Bay', confidence: 0.95 }, { name: 'Air Filter', confidence: 0.88 }] },
+          { timestamp: 2.0, objects: [{ name: 'Alternator', confidence: 0.92 }, { name: 'Belt System', confidence: 0.85 }] },
+          { timestamp: 4.5, objects: [{ name: 'Coolant Lines', confidence: 0.89 }, { name: 'Radiator', confidence: 0.91 }] },
+          { timestamp: 7.0, objects: [{ name: 'Battery', confidence: 0.97 }, { name: 'Terminal Corrosion', confidence: 0.78 }] },
+          { timestamp: 10.0, objects: [{ name: 'Brake Fluid Reservoir', confidence: 0.86 }] },
+        ];
+        addModule('video', { videoUrl, frames });
+        setSystemStatus(prev => ({ ...prev, video: { ...prev.video, status: 'ready', active: true } }));
       }
 
       // Tool Predictions Module
@@ -302,6 +338,8 @@ export default function AppConsole() {
     switch (module.type) {
       case 'vision':
         return <VisionAnalysisModule key={module.id} {...props} imageUrl={module.data.imageUrl} objects={module.data.objects} />;
+      case 'video':
+        return <VideoFrameModule key={module.id} {...props} videoUrl={module.data.videoUrl} frames={module.data.frames} />;
       case 'tools':
         return <ToolPredictionModule key={module.id} {...props} tools={module.data.tools} />;
       case 'steps':
@@ -380,11 +418,36 @@ export default function AppConsole() {
                     
                     <h3 className="text-lg font-medium text-foreground/80 mb-2">AGI Console Ready</h3>
                     <p className="text-sm text-muted-foreground/50 mb-4">Upload files or enter a command to begin analysis</p>
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/40">
-                      <span>Press</span>
-                      <kbd className="px-2 py-1 bg-muted/10 rounded text-[11px] font-mono">⌘K</kbd>
-                      <span>for commands</span>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground/40">
+                        <span>Press</span>
+                        <kbd className="px-2 py-1 bg-muted/10 rounded text-[11px] font-mono">⌘K</kbd>
+                        <span>for commands</span>
+                      </div>
+                      <button 
+                        onClick={() => setShowKeyboardShortcuts(true)}
+                        className="flex items-center gap-1.5 text-[11px] text-primary/60 hover:text-primary transition-colors"
+                      >
+                        <span>⇧⌘K</span>
+                        <span>View all shortcuts</span>
+                      </button>
                     </div>
+                  </motion.div>
+                )}
+
+                {/* Clear All Button - shown when modules exist */}
+                {modules.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-end mb-2"
+                  >
+                    <button
+                      onClick={() => setModules([])}
+                      className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors px-2 py-1 rounded hover:bg-muted/10"
+                    >
+                      Clear all modules
+                    </button>
                   </motion.div>
                 )}
 
@@ -441,6 +504,13 @@ export default function AppConsole() {
             isProcessing={isProcessing}
           />
         </div>
+
+        {/* Keyboard Shortcuts Overlay */}
+        <KeyboardShortcuts 
+          isOpen={showKeyboardShortcuts} 
+          onClose={() => setShowKeyboardShortcuts(false)}
+          onSelectCommand={(cmd) => setCommand(cmd)}
+        />
       </div>
     </TooltipProvider>
   );

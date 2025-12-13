@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import {
   Eye, Box, Wrench, AlertTriangle, Waves, Cpu, Clock, 
   Brain, Target, TrendingUp, ChevronRight, Zap, Shield,
   CheckCircle2, XCircle, ArrowRight, ChevronDown, ChevronUp,
-  X, GripVertical, Code, Play, Pause
+  X, GripVertical, Code, Play, Pause, Video, SkipForward, SkipBack
 } from "lucide-react";
 
 interface ModuleProps {
@@ -192,6 +192,121 @@ export function VisionAnalysisModule({
             </motion.pre>
           )}
         </AnimatePresence>
+      </div>
+    </ModuleWrapper>
+  );
+}
+
+// Video Frame Analysis Module
+export function VideoFrameModule({ 
+  id,
+  videoUrl,
+  frames,
+  onClose 
+}: ModuleProps & { 
+  videoUrl?: string;
+  frames: { timestamp: number; objects: { name: string; confidence: number }[]; thumbnail?: string }[];
+}) {
+  const [selectedFrame, setSelectedFrame] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isPlaying && frames.length > 0) {
+      intervalRef.current = setInterval(() => {
+        setSelectedFrame(prev => (prev + 1) % frames.length);
+      }, 1000);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isPlaying, frames.length]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <ModuleWrapper id={id} icon={Video} title="Video Frame Analysis" color="hsl(200 100% 60%)" badge={`${frames.length} frames`} onClose={onClose}>
+      <div className="space-y-4">
+        {/* Timeline thumbnails */}
+        <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted/20">
+          {frames.map((frame, i) => (
+            <motion.button
+              key={i}
+              onClick={() => setSelectedFrame(i)}
+              className={`shrink-0 relative rounded-lg overflow-hidden border-2 transition-all ${
+                i === selectedFrame ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-border/20 hover:border-blue-500/50'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="w-16 h-10 bg-gradient-to-br from-blue-500/10 to-blue-400/5 flex items-center justify-center">
+                <span className="text-[9px] font-mono text-blue-400">{formatTime(frame.timestamp)}</span>
+              </div>
+              {i === selectedFrame && (
+                <motion.div 
+                  className="absolute inset-0 bg-blue-500/10"
+                  layoutId="frame-highlight"
+                />
+              )}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Playback controls */}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => setSelectedFrame(prev => Math.max(0, prev - 1))}
+          >
+            <SkipBack className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-blue-500/10"
+            onClick={() => setIsPlaying(!isPlaying)}
+          >
+            {isPlaying ? <Pause className="h-4 w-4 text-blue-500" /> : <Play className="h-4 w-4 text-blue-500" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => setSelectedFrame(prev => Math.min(frames.length - 1, prev + 1))}
+          >
+            <SkipForward className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        {/* Selected frame details */}
+        {frames[selectedFrame] && (
+          <motion.div 
+            key={selectedFrame}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-xl bg-background/50 border border-blue-500/10"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-blue-400">Frame {selectedFrame + 1}</span>
+              <span className="text-[10px] font-mono text-muted-foreground">{formatTime(frames[selectedFrame].timestamp)}</span>
+            </div>
+            <div className="space-y-1.5">
+              {frames[selectedFrame].objects.map((obj, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Target className="h-3 w-3 text-blue-500 shrink-0" />
+                  <span className="text-[11px] flex-1">{obj.name}</span>
+                  <span className="text-[9px] text-blue-400">{Math.round(obj.confidence * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </ModuleWrapper>
   );
