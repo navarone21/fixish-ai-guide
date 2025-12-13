@@ -1,38 +1,34 @@
-import { useState, useRef, DragEvent, useEffect } from "react";
+import { useState, useRef, DragEvent, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { FixishAPI } from "@/lib/fixishApi";
 import { useFixishConsoleStore } from "@/state/useFixishConsoleStore";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import hummingbirdLogo from "@/assets/hummingbird-logo.png";
 
 import { HeartbeatBackground } from "@/components/console/HeartbeatBackground";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
 import { SubsystemDock } from "@/components/console/SubsystemDock";
-import { LiveIntelligenceFeed } from "@/components/console/LiveIntelligenceFeed";
 import { CommandBar } from "@/components/console/CommandBar";
 import { IntelligencePanel } from "@/components/console/IntelligencePanel";
 import { DropZone } from "@/components/console/DropZone";
 import { UploadZone } from "@/components/console/UploadZone";
-import { 
-  ObjectDetectionModule, 
-  EmotionBarsModule, 
-  ReasoningModule, 
-  TimelineModule, 
-  SafetyAlertsModule,
-  ToolCardsModule,
-  MemoryModule
-} from "@/components/console/OutputModules";
-import { motion, AnimatePresence } from "framer-motion";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import hummingbirdLogo from "@/assets/hummingbird-logo.png";
+import {
+  VisionAnalysisModule,
+  ToolPredictionModule,
+  RepairSequenceModule,
+  ReasoningModule,
+  FutureMemoryModule,
+  SafetyModule,
+  EmotionModule,
+  MemoryRetrievalModule
+} from "@/components/console/DynamicModules";
 
-interface OutputModule {
+interface DynamicModule {
   id: string;
-  type: 'analysis' | 'steps' | 'tools' | 'warning' | 'vision' | 'audio' | 'memory' | 'diagram' | 'objects' | 'emotions' | 'reasoning' | 'timeline' | 'safety' | 'tool-cards';
-  title: string;
-  content: any;
-  timestamp: Date;
-  status: 'processing' | 'complete' | 'error';
-  media?: { type: string; url: string }[];
+  type: 'vision' | 'tools' | 'steps' | 'reasoning' | 'timeline' | 'safety' | 'emotion' | 'memory';
+  data: any;
 }
 
 type SubsystemStatus = 'idle' | 'warming' | 'processing' | 'ready' | 'error';
@@ -52,12 +48,13 @@ export default function AppConsole() {
   const { toast } = useToast();
   const store = useFixishConsoleStore();
   
-  const [outputModules, setOutputModules] = useState<OutputModule[]>([]);
+  const [modules, setModules] = useState<DynamicModule[]>([]);
   const [command, setCommand] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [mediaQueue, setMediaQueue] = useState<{ type: string; url: string; file: File; name: string }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [lastImageUrl, setLastImageUrl] = useState<string | null>(null);
   
   const [systemStatus, setSystemStatus] = useState<SystemStatusState>({
     vision: { active: false, status: 'idle', fps: 0, objects: 0 },
@@ -73,7 +70,6 @@ export default function AppConsole() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Check backend health
   useEffect(() => {
     const checkHealth = async () => {
       try {
@@ -88,10 +84,9 @@ export default function AppConsole() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll on new modules
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [outputModules]);
+  }, [modules]);
 
   const fileToBase64 = (file: File): Promise<string> => 
     new Promise((resolve, reject) => {
@@ -108,8 +103,8 @@ export default function AppConsole() {
       const fileType = file.type.split('/')[0];
       setMediaQueue(prev => [...prev, { type: fileType, url, file, name: file.name }]);
       
-      // Auto-activate subsystem based on file type
       if (fileType === 'image') {
+        setLastImageUrl(url);
         setSystemStatus(prev => ({ ...prev, vision: { ...prev.vision, status: 'ready', active: true } }));
       } else if (fileType === 'video') {
         setSystemStatus(prev => ({ ...prev, video: { ...prev.video, status: 'ready', active: true } }));
@@ -132,14 +127,13 @@ export default function AppConsole() {
     }
   };
 
-  const addOutputModule = (module: Omit<OutputModule, 'id' | 'timestamp'>) => {
-    const newModule: OutputModule = { ...module, id: Date.now().toString() + Math.random(), timestamp: new Date() };
-    setOutputModules(prev => [...prev, newModule]);
-    return newModule.id;
-  };
+  const removeModule = useCallback((id: string) => {
+    setModules(prev => prev.filter(m => m.id !== id));
+  }, []);
 
-  const updateOutputModule = (id: string, updates: Partial<OutputModule>) => {
-    setOutputModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+  const addModule = (type: DynamicModule['type'], data: any) => {
+    const newModule: DynamicModule = { id: `${type}-${Date.now()}`, type, data };
+    setModules(prev => [...prev, newModule]);
   };
 
   const executeCommand = async () => {
@@ -147,7 +141,6 @@ export default function AppConsole() {
 
     setIsProcessing(true);
     
-    // Activate all relevant subsystems
     setSystemStatus(prev => ({
       ...prev,
       vision: { ...prev.vision, status: 'processing', active: mediaQueue.some(m => m.type === 'image') },
@@ -156,27 +149,13 @@ export default function AppConsole() {
       tools: { ...prev.tools, status: 'processing', active: true },
       memory: { ...prev.memory, status: 'processing', active: true },
     }));
-    
-    // Show uploaded media
-    if (mediaQueue.length > 0) {
-      addOutputModule({
-        type: 'vision',
-        title: 'Input Media',
-        content: { files: mediaQueue.map(m => m.name) },
-        status: 'complete',
-        media: mediaQueue.map(m => ({ type: m.type, url: m.url }))
-      });
-    }
-
-    const processingId = addOutputModule({
-      type: 'analysis',
-      title: 'AGI Processing',
-      content: { command: command || 'Analyzing uploaded content...' },
-      status: 'processing'
-    });
 
     const currentCommand = command;
     const currentMedia = [...mediaQueue];
+    const hasImage = currentMedia.some(m => m.type === 'image');
+    const hasAudio = currentMedia.some(m => m.type === 'audio');
+    const imageUrl = currentMedia.find(m => m.type === 'image')?.url || lastImageUrl;
+    
     setCommand("");
     setMediaQueue([]);
 
@@ -197,110 +176,111 @@ export default function AppConsole() {
         context: {}
       });
 
-      updateOutputModule(processingId, { status: 'complete', content: { command: currentCommand, result: 'Analysis complete' } });
-
-      // Add dynamic output modules based on results
-      
-      // Object detection (simulated if image was uploaded)
-      if (imageBase64) {
-        const detectedObjects = (result as any).objects || [
+      // Vision Analysis Module
+      if (hasImage || imageBase64) {
+        const objects = (result as any).objects || [
           { name: 'Engine Block', confidence: 0.94 },
           { name: 'Carburetor', confidence: 0.87 },
-          { name: 'Alternator', confidence: 0.82 },
-          { name: 'Timing Belt', confidence: 0.76 },
+          { name: 'Alternator Belt', confidence: 0.82 },
+          { name: 'Coolant Reservoir', confidence: 0.78 },
+          { name: 'Timing Cover', confidence: 0.71 },
         ];
-        addOutputModule({
-          type: 'objects',
-          title: 'Object Detection',
-          content: { objects: detectedObjects },
-          status: 'complete'
-        });
-        setSystemStatus(prev => ({ ...prev, vision: { ...prev.vision, objects: detectedObjects.length } }));
+        addModule('vision', { imageUrl, objects });
+        setSystemStatus(prev => ({ ...prev, vision: { ...prev.vision, objects: objects.length } }));
       }
 
-      // AGI Analysis text
-      if (result.instructions) {
-        addOutputModule({ type: 'analysis', title: 'AGI Analysis', content: { text: result.instructions }, status: 'complete' });
-      }
-
-      // Reasoning steps
-      const reasoningSteps = (result as any).reasoning || [
-        { step: 'Identified primary components in the image', confidence: 0.95 },
-        { step: 'Cross-referenced with repair database', confidence: 0.88 },
-        { step: 'Generated step-by-step repair sequence', confidence: 0.92 },
-        { step: 'Predicted required tools based on task', confidence: 0.85 },
+      // Tool Predictions Module
+      const tools = result.predicted_tools?.map((t: any) => ({
+        name: typeof t === 'string' ? t : t.name,
+        confidence: typeof t === 'object' ? t.confidence : 0.7 + Math.random() * 0.3,
+        description: typeof t === 'object' ? t.description : 'Recommended for this repair'
+      })) || [
+        { name: 'Socket Wrench Set', confidence: 0.95, description: 'For bolt removal and installation' },
+        { name: 'Torque Wrench', confidence: 0.88, description: 'Precise tightening to spec' },
+        { name: 'Multimeter', confidence: 0.76, description: 'Electrical diagnostics' },
+        { name: 'Pliers Set', confidence: 0.72, description: 'Gripping and manipulation' },
       ];
-      addOutputModule({
-        type: 'reasoning',
-        title: 'AGI Reasoning',
-        content: { reasoning: reasoningSteps },
-        status: 'complete'
-      });
+      addModule('tools', { tools });
+      store.setToolResult({ tools: result.predicted_tools || tools.map((t: any) => t.name) });
 
-      // Execution steps
-      if (result.steps?.length) {
-        addOutputModule({ type: 'steps', title: 'Repair Sequence', content: { steps: result.steps }, status: 'complete' });
-      }
+      // Repair Steps Module
+      const steps = result.steps?.map((s: string, i: number) => ({
+        title: s,
+        description: `Detailed instructions for step ${i + 1}`,
+        duration: `${2 + Math.floor(Math.random() * 8)} min`
+      })) || [
+        { title: 'Disconnect battery terminal', description: 'Ensure safety by disconnecting negative terminal first', duration: '2 min' },
+        { title: 'Remove protective covers', description: 'Carefully remove any plastic covers or shields', duration: '5 min' },
+        { title: 'Locate and access component', description: 'Identify the component based on visual analysis', duration: '3 min' },
+        { title: 'Perform repair procedure', description: 'Follow manufacturer specifications for repair', duration: '15 min' },
+        { title: 'Reassemble and test', description: 'Reinstall components and verify operation', duration: '10 min' },
+      ];
+      addModule('steps', { steps });
 
-      // Tool predictions
-      if (result.predicted_tools?.length) {
-        const toolsWithConfidence = result.predicted_tools.map((t: any) => 
-          typeof t === 'string' ? { name: t, confidence: 0.7 + Math.random() * 0.3 } : t
-        );
-        addOutputModule({ type: 'tool-cards', title: 'Tool Predictions', content: { tools: toolsWithConfidence }, status: 'complete' });
-        store.setToolResult({ tools: result.predicted_tools });
-      }
+      // Reasoning Module
+      const reasoning = (result as any).reasoning || [
+        { step: 'Analyzed visual input for component identification', confidence: 0.96 },
+        { step: 'Cross-referenced with repair knowledge base', confidence: 0.91 },
+        { step: 'Identified optimal repair sequence based on component access', confidence: 0.88 },
+        { step: 'Selected tools based on fastener types detected', confidence: 0.84 },
+        { step: 'Generated safety assessment from hazard detection', confidence: 0.92 },
+      ];
+      addModule('reasoning', { reasoning });
 
-      // Emotion analysis (if audio)
-      if (audioBase64 || result.emotion) {
-        const emotions = (result as any).emotions || [
-          { label: 'Confidence', value: 0.72, color: 'hsl(140 100% 50%)' },
-          { label: 'Stress', value: 0.28, color: 'hsl(0 80% 60%)' },
-          { label: 'Focus', value: 0.85, color: 'hsl(200 100% 60%)' },
-          { label: 'Frustration', value: 0.15, color: 'hsl(30 100% 60%)' },
-        ];
-        addOutputModule({ type: 'emotions', title: 'Emotion Analysis', content: { emotions }, status: 'complete' });
-        setSystemStatus(prev => ({ 
-          ...prev, 
-          audio: { ...prev.audio, emotion: result.emotion?.label || 'Confident', confidence: result.emotion?.confidence || 0.72 } 
-        }));
-      }
-
-      // Timeline progression
+      // Timeline/Future Memory Module
       const timeline = {
-        past: result.timeline?.past || ['Initial assessment', 'Component identification'],
-        current: currentCommand || 'Analyzing repair requirements',
-        future: result.timeline?.future || ['Disassemble housing', 'Replace faulty component', 'Reassemble and test']
+        past: result.timeline?.past || ['System initialized', 'Input received'],
+        current: currentCommand || 'Processing repair analysis',
+        future: result.timeline?.future || [
+          'Component disassembly',
+          'Repair execution', 
+          'Quality verification',
+          'System restoration'
+        ]
       };
-      addOutputModule({ type: 'timeline', title: 'Timeline', content: timeline, status: 'complete' });
+      addModule('timeline', timeline);
       store.setFutureResult({ next_steps: timeline.future });
 
-      // Safety alerts
-      if (result.warnings?.length) {
-        const safetyAlerts = result.warnings.map((w: string) => ({
-          level: w.toLowerCase().includes('critical') ? 'critical' : 'warning',
-          message: w
-        }));
-        addOutputModule({ type: 'safety', title: 'Safety Alerts', content: { alerts: safetyAlerts }, status: 'complete' });
-        setSystemStatus(prev => ({ ...prev, safety: { ...prev.safety, active: true, level: 'warning' } }));
+      // Safety Module
+      const safetyLevel = result.warnings?.length ? (result.warnings.some((w: string) => w.toLowerCase().includes('critical')) ? 'critical' : 'warning') : 'normal';
+      const alerts = result.warnings?.map((w: string) => ({
+        severity: w.toLowerCase().includes('critical') ? 'critical' : 'warning',
+        message: w
+      })) || [];
+      addModule('safety', { level: safetyLevel, alerts });
+      if (alerts.length > 0) {
+        setSystemStatus(prev => ({ ...prev, safety: { ...prev.safety, active: true, level: safetyLevel as any } }));
       }
 
-      // Memory retrieval
+      // Emotion Module (if audio)
+      if (hasAudio || audioBase64) {
+        const emotions = (result as any).emotions || [
+          { label: 'Confidence', value: 0.78, color: 'hsl(140 100% 50%)' },
+          { label: 'Concern', value: 0.35, color: 'hsl(45 100% 50%)' },
+          { label: 'Focus', value: 0.89, color: 'hsl(200 100% 60%)' },
+          { label: 'Urgency', value: 0.22, color: 'hsl(0 80% 60%)' },
+        ];
+        addModule('emotion', { emotions });
+        setSystemStatus(prev => ({ 
+          ...prev, 
+          audio: { ...prev.audio, emotion: result.emotion?.label || 'Focused', confidence: result.emotion?.confidence || 0.85 } 
+        }));
+      }
+
+      // Memory Module
       const memories = (result as any).memories || [
-        { content: 'Similar repair completed 3 days ago with 95% success rate', relevance: 0.92, timestamp: '3 days ago' },
-        { content: 'Related component failure pattern identified in database', relevance: 0.78, timestamp: '1 week ago' },
+        { content: 'Similar repair pattern found in database with 94% success rate', relevance: 0.94, timestamp: '2 days ago' },
+        { content: 'Related component failure documented - check wear patterns', relevance: 0.82, timestamp: '1 week ago' },
       ];
-      addOutputModule({ type: 'memory', title: 'Memory Retrieval', content: { memories }, status: 'complete' });
+      addModule('memory', { memories });
       setSystemStatus(prev => ({ ...prev, memory: { ...prev.memory, entries: memories.length } }));
 
       store.setProcessResult(result);
 
     } catch (error: any) {
-      updateOutputModule(processingId, { status: 'error', content: { error: error.message } });
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsProcessing(false);
-      // Reset subsystem statuses after delay
       setTimeout(() => {
         setSystemStatus(prev => ({
           vision: { ...prev.vision, status: 'idle', active: false },
@@ -316,37 +296,30 @@ export default function AppConsole() {
     }
   };
 
-  // Render output module by type
-  const renderOutputModule = (module: OutputModule) => {
+  const renderModule = (module: DynamicModule) => {
+    const props = { id: module.id, onClose: removeModule };
+    
     switch (module.type) {
-      case 'objects':
-        return <ObjectDetectionModule key={module.id} objects={module.content.objects} />;
-      case 'emotions':
-        return <EmotionBarsModule key={module.id} emotions={module.content.emotions} />;
+      case 'vision':
+        return <VisionAnalysisModule key={module.id} {...props} imageUrl={module.data.imageUrl} objects={module.data.objects} />;
+      case 'tools':
+        return <ToolPredictionModule key={module.id} {...props} tools={module.data.tools} />;
+      case 'steps':
+        return <RepairSequenceModule key={module.id} {...props} steps={module.data.steps} />;
       case 'reasoning':
-        return <ReasoningModule key={module.id} reasoning={module.content.reasoning} />;
+        return <ReasoningModule key={module.id} {...props} reasoning={module.data.reasoning} />;
       case 'timeline':
-        return <TimelineModule key={module.id} past={module.content.past} current={module.content.current} future={module.content.future} />;
+        return <FutureMemoryModule key={module.id} {...props} past={module.data.past} current={module.data.current} future={module.data.future} />;
       case 'safety':
-        return <SafetyAlertsModule key={module.id} alerts={module.content.alerts} />;
-      case 'tool-cards':
-        return <ToolCardsModule key={module.id} tools={module.content.tools} />;
+        return <SafetyModule key={module.id} {...props} level={module.data.level} alerts={module.data.alerts} />;
+      case 'emotion':
+        return <EmotionModule key={module.id} {...props} emotions={module.data.emotions} />;
       case 'memory':
-        return <MemoryModule key={module.id} memories={module.content.memories} />;
+        return <MemoryRetrievalModule key={module.id} {...props} memories={module.data.memories} />;
       default:
-        return null; // Handled by LiveIntelligenceFeed
+        return null;
     }
   };
-
-  // Filter standard modules for LiveIntelligenceFeed
-  const standardModules = outputModules.filter(m => 
-    !['objects', 'emotions', 'reasoning', 'timeline', 'safety', 'tool-cards', 'memory'].includes(m.type)
-  );
-  
-  // Get special modules
-  const specialModules = outputModules.filter(m => 
-    ['objects', 'emotions', 'reasoning', 'timeline', 'safety', 'tool-cards', 'memory'].includes(m.type)
-  );
 
   return (
     <TooltipProvider>
@@ -356,18 +329,8 @@ export default function AppConsole() {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
       >
-        <HeartbeatBackground 
-          isActive={isProcessing} 
-          intensity={isProcessing ? 'processing' : 'idle'} 
-        />
-        
-        <DropZone 
-          isDragging={isDragging}
-          onDragOver={(e) => e.preventDefault()}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-        />
-
+        <HeartbeatBackground isActive={isProcessing} intensity={isProcessing ? 'processing' : 'idle'} />
+        <DropZone isDragging={isDragging} onDragOver={(e) => e.preventDefault()} onDragLeave={() => setIsDragging(false)} onDrop={handleDrop} />
         <ConsoleHeader isProcessing={isProcessing} isOnline={isOnline} />
 
         <div className="flex-1 flex overflow-hidden relative z-10">
@@ -376,21 +339,16 @@ export default function AppConsole() {
           <SubsystemDock 
             systemStatus={systemStatus}
             onUpload={(_, accept) => openFileDialog(accept)}
-            onAction={(subsystem, action) => {
-              console.log('Action:', subsystem, action);
-              toast({ title: `${subsystem}`, description: `Action: ${action}` });
-            }}
+            onAction={(subsystem, action) => toast({ title: subsystem, description: `Action: ${action}` })}
           />
 
           <main className="flex-1 flex flex-col min-w-0">
-            {/* Upload Zone at top */}
             <UploadZone onFilesSelected={handleFiles} isProcessing={isProcessing} />
             
-            {/* Main intelligence feed */}
-            <ScrollArea className="flex-1 px-6 py-2" ref={scrollRef}>
+            <ScrollArea className="flex-1 px-6 py-4" ref={scrollRef}>
               <div className="max-w-4xl mx-auto space-y-4">
-                {/* Empty state */}
-                {outputModules.length === 0 && !isProcessing && (
+                {/* Empty state - only show when no modules */}
+                {modules.length === 0 && !isProcessing && (
                   <motion.div 
                     className="text-center py-24"
                     initial={{ opacity: 0 }}
@@ -413,9 +371,7 @@ export default function AppConsole() {
                       />
                       <motion.div 
                         className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10"
-                        animate={{ 
-                          boxShadow: ['0 0 0 0 hsl(var(--primary) / 0.1)', '0 0 30px 5px hsl(var(--primary) / 0.15)', '0 0 0 0 hsl(var(--primary) / 0.1)']
-                        }}
+                        animate={{ boxShadow: ['0 0 0 0 hsl(var(--primary) / 0.1)', '0 0 30px 5px hsl(var(--primary) / 0.15)', '0 0 0 0 hsl(var(--primary) / 0.1)'] }}
                         transition={{ duration: 3, repeat: Infinity }}
                       >
                         <img src={hummingbirdLogo} alt="Fix-ISH" className="h-12 w-12 object-contain opacity-70" />
@@ -423,58 +379,44 @@ export default function AppConsole() {
                     </motion.div>
                     
                     <h3 className="text-lg font-medium text-foreground/80 mb-2">AGI Console Ready</h3>
-                    <p className="text-sm text-muted-foreground/50 mb-4">
-                      Multimodal intelligence system standing by
-                    </p>
+                    <p className="text-sm text-muted-foreground/50 mb-4">Upload files or enter a command to begin analysis</p>
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/40">
                       <span>Press</span>
                       <kbd className="px-2 py-1 bg-muted/10 rounded text-[11px] font-mono">⌘K</kbd>
-                      <span>or upload files to begin</span>
+                      <span>for commands</span>
                     </div>
                   </motion.div>
                 )}
 
-                {/* Live Intelligence Feed (standard modules) */}
-                <AnimatePresence mode="popLayout">
-                  <LiveIntelligenceFeed outputModules={standardModules} isProcessing={isProcessing && standardModules.length > 0} />
-                </AnimatePresence>
-
-                {/* Special Output Modules */}
-                <AnimatePresence mode="popLayout">
-                  {specialModules.map(module => (
-                    <motion.div 
-                      key={module.id}
-                      layout
-                      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                    >
-                      {renderOutputModule(module)}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                {/* Dynamic Modules */}
+                <Reorder.Group axis="y" values={modules} onReorder={setModules} className="space-y-4">
+                  <AnimatePresence mode="popLayout">
+                    {modules.map(module => (
+                      <Reorder.Item key={module.id} value={module} className="cursor-grab active:cursor-grabbing">
+                        {renderModule(module)}
+                      </Reorder.Item>
+                    ))}
+                  </AnimatePresence>
+                </Reorder.Group>
 
                 {/* Processing indicator */}
                 {isProcessing && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-center gap-3 py-6"
+                    className="flex items-center justify-center gap-3 py-8"
                   >
                     <div className="flex gap-1.5">
                       {[0, 1, 2, 3].map((i) => (
                         <motion.div
                           key={i}
                           className="w-2 h-2 rounded-full bg-primary"
-                          animate={{ 
-                            y: [0, -8, 0],
-                            opacity: [0.4, 1, 0.4]
-                          }}
+                          animate={{ y: [0, -10, 0], opacity: [0.4, 1, 0.4] }}
                           transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
                         />
                       ))}
                     </div>
-                    <span className="text-sm text-muted-foreground">Processing intelligence...</span>
+                    <span className="text-sm text-muted-foreground">Generating intelligence modules...</span>
                   </motion.div>
                 )}
               </div>
