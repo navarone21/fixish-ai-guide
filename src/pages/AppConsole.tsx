@@ -190,12 +190,21 @@ export default function AppConsole() {
         else if (media.type === 'audio') audioBase64 = base64;
       }
 
-      const result = await FixishAPI.process({
-        prompt: currentCommand || "Analyze this content",
-        image: imageBase64,
-        audio: audioBase64,
-        context: {}
-      });
+      // Call the primary /ask endpoint
+      const askResult = await FixishAPI.askBackend(currentCommand || "Analyze this content");
+      
+      // Use response from backend, fallback to process endpoint for media
+      let result: any = askResult;
+      
+      if (hasImage || hasAudio) {
+        const processResult = await FixishAPI.process({
+          prompt: currentCommand || "Analyze this content",
+          image: imageBase64,
+          audio: audioBase64,
+          context: {}
+        });
+        result = { ...askResult, ...processResult };
+      }
 
       // Vision Analysis Module
       if (hasImage || imageBase64) {
