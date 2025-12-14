@@ -24,12 +24,13 @@ import {
   FutureMemoryModule,
   SafetyModule,
   EmotionModule,
-  MemoryRetrievalModule
+  MemoryRetrievalModule,
+  ResponseTextModule
 } from "@/components/console/DynamicModules";
 
 interface DynamicModule {
   id: string;
-  type: 'vision' | 'video' | 'tools' | 'steps' | 'reasoning' | 'timeline' | 'safety' | 'emotion' | 'memory';
+  type: 'vision' | 'video' | 'tools' | 'steps' | 'reasoning' | 'timeline' | 'safety' | 'emotion' | 'memory' | 'response';
   data: any;
 }
 
@@ -206,6 +207,10 @@ export default function AppConsole() {
         result = { ...askResult, ...processResult };
       }
 
+      // Response Text Module - Always show the raw backend response first
+      const responseText = result.response || result.instructions || "Analysis complete";
+      addModule('response', { response: responseText, prompt: currentCommand });
+
       // Vision Analysis Module
       if (hasImage || imageBase64) {
         const objects = (result as any).objects || [
@@ -363,6 +368,8 @@ export default function AppConsole() {
         return <EmotionModule key={module.id} {...props} emotions={module.data.emotions} />;
       case 'memory':
         return <MemoryRetrievalModule key={module.id} {...props} memories={module.data.memories} />;
+      case 'response':
+        return <ResponseTextModule key={module.id} {...props} response={module.data.response} prompt={module.data.prompt} />;
       default:
         return null;
     }

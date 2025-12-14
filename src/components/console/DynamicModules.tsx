@@ -6,7 +6,8 @@ import {
   Eye, Box, Wrench, AlertTriangle, Waves, Cpu, Clock, 
   Brain, Target, TrendingUp, ChevronRight, Zap, Shield,
   CheckCircle2, XCircle, ArrowRight, ChevronDown, ChevronUp,
-  X, GripVertical, Code, Play, Pause, Video, SkipForward, SkipBack
+  X, GripVertical, Code, Play, Pause, Video, SkipForward, SkipBack,
+  MessageSquare, Copy, Check
 } from "lucide-react";
 
 interface ModuleProps {
@@ -721,6 +722,109 @@ export function MemoryRetrievalModule({
             </div>
           </motion.div>
         ))}
+      </div>
+    </ModuleWrapper>
+  );
+}
+
+// ==================== RESPONSE TEXT MODULE ====================
+export function ResponseTextModule({ 
+  id, 
+  onClose,
+  response,
+  prompt
+}: ModuleProps & { 
+  response: string;
+  prompt?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(response);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <ModuleWrapper 
+      id={id} 
+      icon={MessageSquare} 
+      title="AGI Response" 
+      color="hsl(var(--primary))" 
+      badge="Live"
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        {/* Prompt echo */}
+        {prompt && (
+          <div className="px-3 py-2 rounded-lg bg-muted/20 border border-border/10">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Your prompt</span>
+            <p className="text-xs text-foreground/70 mt-1">{prompt}</p>
+          </div>
+        )}
+        
+        {/* Main response */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative"
+        >
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-md hover:bg-primary/10"
+              onClick={() => setShowRaw(!showRaw)}
+            >
+              <Code className="h-3 w-3 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-md hover:bg-primary/10"
+              onClick={handleCopy}
+            >
+              {copied ? (
+                <Check className="h-3 w-3 text-emerald-500" />
+              ) : (
+                <Copy className="h-3 w-3 text-muted-foreground" />
+              )}
+            </Button>
+          </div>
+          
+          <div 
+            className="p-4 rounded-xl border border-primary/20 min-h-[100px]"
+            style={{ 
+              background: 'linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 50%)',
+              boxShadow: '0 0 40px -10px hsl(var(--primary) / 0.15)'
+            }}
+          >
+            {showRaw ? (
+              <pre className="text-xs font-mono text-foreground/80 whitespace-pre-wrap overflow-x-auto">
+                {JSON.stringify({ response }, null, 2)}
+              </pre>
+            ) : (
+              <motion.p 
+                className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {response || "Processing..."}
+              </motion.p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Live indicator */}
+        <div className="flex items-center gap-2 pt-2">
+          <motion.div
+            className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className="text-[10px] text-muted-foreground">Response received from AGI backend</span>
+        </div>
       </div>
     </ModuleWrapper>
   );
