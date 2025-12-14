@@ -1,10 +1,10 @@
 /* -------------------------------------------------
    FIX-ISH BACKEND API
-   Connects to Flask backend at localhost:5050
+   Connects to primary backend at fix-ish-1.onrender.com
 -------------------------------------------------- */
 
-const BASE = "http://localhost:5050";
-const LEGACY_BASE = "https://fix-ish-1.onrender.com";
+const BASE = "https://fix-ish-1.onrender.com";
+const LOCAL_BASE = "http://localhost:5050";
 
 /* Low-level helpers */
 async function post(endpoint: string, body: any) {
@@ -17,6 +17,24 @@ async function post(endpoint: string, body: any) {
     throw new Error(`API Error: ${res.status} ${res.statusText}`);
   }
   return res.json();
+}
+
+/* Ask endpoint - primary chat interface */
+export interface AskPayload {
+  prompt: string;
+}
+
+export interface AskResponse {
+  response?: string;
+  instructions?: string;
+  steps?: string[];
+  warnings?: string[];
+  tools?: string[];
+  error?: string;
+}
+
+export async function askBackend(prompt: string): Promise<AskResponse> {
+  return await post("/ask", { prompt });
 }
 
 async function postFormData(endpoint: string, formData: FormData) {
@@ -182,7 +200,7 @@ export async function getHealth(): Promise<HealthResponse> {
 /*  For SuperAgent compat  */
 /* ----------------------- */
 async function legacyPost(endpoint: string, body: any) {
-  const res = await fetch(`${LEGACY_BASE}${endpoint}`, {
+  const res = await fetch(`${BASE}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -191,7 +209,7 @@ async function legacyPost(endpoint: string, body: any) {
 }
 
 async function legacyPostFormData(endpoint: string, formData: FormData) {
-  const res = await fetch(`${LEGACY_BASE}${endpoint}`, {
+  const res = await fetch(`${BASE}${endpoint}`, {
     method: "POST",
     body: formData,
   });
@@ -230,7 +248,9 @@ export async function analyzeVideoFrame(file: File): Promise<{ frame_analysis: s
 /*  EXPORT ALL             */
 /* ----------------------- */
 export const FixishAPI = {
-  // New endpoints (localhost:5050)
+  // Primary endpoint
+  askBackend,
+  // Processing endpoints
   process,
   uploadImage,
   uploadVideo,
@@ -239,7 +259,7 @@ export const FixishAPI = {
   predictTools,
   getFuture,
   getHealth,
-  // Legacy endpoints (render.com)
+  // Legacy endpoints
   askSuperAgent,
   analyzeImage,
   suggestEdits,
