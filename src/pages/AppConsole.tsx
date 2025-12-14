@@ -208,7 +208,17 @@ export default function AppConsole() {
       }
 
       // Response Text Module - Always show the raw backend response first
-      const responseText = result.response || result.instructions || "Analysis complete";
+      const responseText =
+        result.response ||
+        result.output ||
+        result.text ||
+        result.message ||
+        result.result ||
+        result.analysis ||
+        result.instructions ||
+        result.note ||
+        (typeof result === 'string' ? result : JSON.stringify(result, null, 2)) ||
+        "Analysis complete";
       addModule('response', { response: responseText, prompt: currentCommand });
 
       // Vision Analysis Module
