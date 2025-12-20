@@ -1,6 +1,7 @@
 /* -------------------------------------------------
    FIX-ISH BACKEND API
-   Connects to BFF at fix-ish-backend.onrender.com
+   Primary: BFF at fix-ish-backend.onrender.com
+   Fallback: fix-ish-1.onrender.com
 -------------------------------------------------- */
 
 const BFF_BASE = "https://fix-ish-backend.onrender.com";
@@ -42,17 +43,34 @@ export interface AskResponse {
 }
 
 export async function askBackend(message: string): Promise<AskResponse> {
-  const res = await fetch(`${BFF_BASE}/bff/chat`, {
+  // Try BFF first, fallback to original /ask endpoint
+  try {
+    const res = await fetch(`${BFF_BASE}/bff/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, context: {} }),
+    });
+    if (res.ok) {
+      const data: BFFChatResponse = await res.json();
+      console.log("[FIX-ISH] BFF response:", data);
+      return { response: data.reply, reply: data.reply };
+    }
+  } catch (e) {
+    console.log("[FIX-ISH] BFF unavailable, trying fallback:", e);
+  }
+  
+  // Fallback to original /ask endpoint
+  const res = await fetch(`${BASE}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, context: {} }),
+    body: JSON.stringify({ prompt: message }),
   });
   if (!res.ok) {
     throw new Error(`API Error: ${res.status} ${res.statusText}`);
   }
-  const data: BFFChatResponse = await res.json();
-  // Map reply to response for compatibility
-  return { response: data.reply, reply: data.reply };
+  const data = await res.json();
+  console.log("[FIX-ISH] Fallback response:", data);
+  return data;
 }
 
 async function postFormData(endpoint: string, formData: FormData) {
