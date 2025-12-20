@@ -208,7 +208,9 @@ export default function AppConsole() {
       }
 
       // Response Text Module - Always show the raw backend response first
+      // BFF returns { reply: "..." }, mapped to response for compatibility
       const responseText =
+        result.reply ||
         result.response ||
         result.output ||
         result.text ||

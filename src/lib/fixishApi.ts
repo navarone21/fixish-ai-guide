@@ -1,8 +1,9 @@
 /* -------------------------------------------------
    FIX-ISH BACKEND API
-   Connects to primary backend at fix-ish-1.onrender.com
+   Connects to BFF at fix-ish-backend.onrender.com
 -------------------------------------------------- */
 
+const BFF_BASE = "https://fix-ish-backend.onrender.com";
 const BASE = "https://fix-ish-1.onrender.com";
 const LOCAL_BASE = "http://localhost:5050";
 
@@ -19,13 +20,20 @@ async function post(endpoint: string, body: any) {
   return res.json();
 }
 
-/* Ask endpoint - primary chat interface */
-export interface AskPayload {
-  prompt: string;
+/* BFF Chat endpoint - primary chat interface */
+export interface BFFChatPayload {
+  message: string;
+  context: Record<string, any>;
+}
+
+export interface BFFChatResponse {
+  reply: string;
+  metadata?: Record<string, any>;
 }
 
 export interface AskResponse {
   response?: string;
+  reply?: string;
   instructions?: string;
   steps?: string[];
   warnings?: string[];
@@ -33,8 +41,18 @@ export interface AskResponse {
   error?: string;
 }
 
-export async function askBackend(prompt: string): Promise<AskResponse> {
-  return await post("/ask", { prompt });
+export async function askBackend(message: string): Promise<AskResponse> {
+  const res = await fetch(`${BFF_BASE}/bff/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, context: {} }),
+  });
+  if (!res.ok) {
+    throw new Error(`API Error: ${res.status} ${res.statusText}`);
+  }
+  const data: BFFChatResponse = await res.json();
+  // Map reply to response for compatibility
+  return { response: data.reply, reply: data.reply };
 }
 
 async function postFormData(endpoint: string, formData: FormData) {
