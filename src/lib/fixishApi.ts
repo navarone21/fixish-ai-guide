@@ -1,12 +1,18 @@
 /* -------------------------------------------------
    FIX-ISH BACKEND API
-   Primary: BFF at fix-ish-backend.onrender.com
-   Fallback: fix-ish-1.onrender.com
+   Uses environment variables for flexibility
 -------------------------------------------------- */
 
-const BFF_BASE = "https://fix-ish-backend.onrender.com";
-const BASE = "https://fix-ish-1.onrender.com";
+// Get API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE || 
+                 import.meta.env.VITE_FIXISH_BACKEND_URL || 
+                 "http://localhost:5050";
+
+const BFF_BASE = API_BASE;
+const BASE = API_BASE;
 const LOCAL_BASE = "http://localhost:5050";
+
+console.log("🔧 FIX-ISH API Base URL:", API_BASE);
 
 /* Low-level helpers */
 async function post(endpoint: string, body: any) {

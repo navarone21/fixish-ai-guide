@@ -1,7 +1,13 @@
 // src/lib/api.ts
 
-export const API_BASE_URL =
-  "https://operations-english-relates-invited.trycloudflare.com/api";
+// Get API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_BASE || 
+                 import.meta.env.VITE_FIXISH_BACKEND_URL || 
+                 "http://localhost:5050";
+
+export const API_BASE_URL = `${API_BASE}/api`;
+
+console.log("🔧 API Base URL:", API_BASE_URL);
 
 // -----------------------------
 // Generic Fetch Wrapper

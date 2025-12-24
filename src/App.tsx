@@ -26,8 +26,16 @@ import DepthVision from "./pages/DepthVision";
 import ToolsPanel from "./pages/ToolsPanel";
 import ExplorePage from "./pages/ExplorePage";
 import FeatureToggles from "./pages/FeatureToggles";
+import BackendFeatures from "./pages/BackendFeatures";
 
 const queryClient = new QueryClient();
+
+// Get backend URL from environment variables
+const BACKEND_URL = import.meta.env.VITE_FIXISH_BACKEND_URL || 
+                    import.meta.env.VITE_API_BASE || 
+                    "http://localhost:5050";
+
+console.log("🔧 FIX-ISH Backend URL:", BACKEND_URL);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,7 +43,7 @@ const App = () => (
     <Sonner />
     <BrowserRouter>
       <MainThemeProvider>
-        <FixishProvider backendUrl="https://operations-english-relates-invited.trycloudflare.com">
+        <FixishProvider backendUrl={BACKEND_URL}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/app" element={<AppConsole />} />
@@ -49,6 +57,7 @@ const App = () => (
             <Route path="/depth" element={<DepthVision />} />
             <Route path="/tools" element={<ToolsPanel />} />
             <Route path="/feature-toggles" element={<FeatureToggles />} />
+            <Route path="/backend-features" element={<BackendFeatures />} />
             <Route path="/scene" element={<SceneGraphPage />} />
             <Route path="/diag" element={<Diagnostics />} />
             <Route path="/help" element={<HelpCenter />} />
